@@ -7,6 +7,7 @@
 | GET /healthz | 数据库可连接时返回 status=ok |
 | GET /api/fabrics | items/total/offset/stats；q、status(stock/unused/using/used/all)、material、color、location、tag、min_width/min_length(cm)、sort(purchase/updated/name)、offset、trash=1 |
 | POST /api/fabrics | 创建完整布料表单，返回 Fabric |
+| POST /api/integrations/ledger | 按 Ledger transactionId 幂等创建布料，返回当前 Fabric |
 | GET /api/fabrics/{id} | 详情，包括 pieces、photos、photoIds、revision、deletedAt |
 | PUT /api/fabrics/{id} | 默认保存完整表单；action=remnant 仅更新 pieces/status，需 revision |
 | DELETE /api/fabrics/{id} | body 包含 revision，软删除，返回新版本 |
@@ -20,6 +21,10 @@
 | GET /media/{id}/thumb | WebP 缩略图 |
 
 Fabric 包含 name、materials、composition、color、tags、status、location、purchaseDate、shop、price、notes、pieces、photoIds。Price 为十进制字符串，空表示未知。Piece 包含 width/length 十进制字符串、unit cm/m、count、irregular、note；widthMM/lengthMM 由服务器重算。只读字段 ID、时间、金额分值等由服务端覆盖，不能用于绕过校验。
+
+Ledger 联动输入为 {transactionId,name,purchaseDate,price}，transactionId 为标准小写 UUID，日期与总价必填。该接口以来源 ID 代替 Idempotency-Key；相同 ID 永远指向首次创建的布料，后续调用只返回现有记录，不更新字段。来源记录长期保留，已删除/清理的布料返回 409/404，不重新创建。沿用本站来源检查和写入限速，不新增身份认证。
+
+名称最多 500 字符（兼容 Ledger 标题），空名称在联动中使用“未命名布料”；日期原样映射，金额为十进制元。状态未使用，默认一组宽长未知、1 片，其余资料和图片为空；客户端跳转 /fabricworld/fabrics/:id/edit 补全。
 
 余料请求只需 `{revision, action: "remnant", status: "using" | "used", pieces}`，返回完整 Fabric。used 必须传空 pieces；其他有效状态兼容旧客户端并归为 using。只作用于已有布料，不能用余料动作创建记录。即使携带 name、photoIds 等旧表单字段，也不会修改资料和照片归属；版本过期仍返回 409。
 

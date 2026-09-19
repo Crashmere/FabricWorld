@@ -95,6 +95,12 @@ vips --version
 
 图片处理支持已验证的 libvips 8.15/8.18，色彩参数使用二者共用的 `--export-profile=srgb`。8.15 不支持新版名称 `--output-profile`；转换失败会在 journal 记录子进程错误，页面返回可读提示。
 
+## Ledger 联动运行约定
+
+Ledger 从本机 HTTP 调用 /api/integrations/ledger，默认目标 127.0.0.1:18082；配置归 Ledger 的 LEDGER_FABRICWORLD_URL。FabricWorld 无新增配置、共享数据库或服务依赖；先发布 FabricWorld 接口，再发布 Ledger 弹窗。Nginx、运行身份和权限保持原有配置。
+
+每日清理长期保留 fingerprint 以 ledger: 开头的 operations（来源与首次结果），保证跨日重试不重复建布料。该记录与数据库一起备份恢复，不放到浏览器或 Ledger 数据库。旧版清理不认识此保留规则；长期回退旧版前停用联动并核对来源记录。恢复旧备份时需核对备份之后的同步记录，不把程序回退当成数据库恢复。
+
 ## 文档同步
 
 从已推送提交通过 git archive 导出 AGENTS.md 和受跟踪 docs/*.md 白名单，管理员同步到 /opt/fabricworld，最后写 docs/SOURCE（repository、commit、subdirectory、synced_at）。比较 SHA-256；不上传整个工作目录或 .local。共享清单单独维护在 agent-config/server-operations，按其 maintenance 同步 /opt/server-context 与 /opt/AGENTS.md。

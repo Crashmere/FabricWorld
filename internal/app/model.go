@@ -154,7 +154,7 @@ func (f *Fabric) Validate() error {
 		s     *string
 		field string
 		max   int
-	}{{&f.Name, "name", 100}, {&f.Composition, "composition", 200}, {&f.Color, "color", 40}, {&f.Location, "location", 160}, {&f.Shop, "shop", 160}, {&f.Notes, "notes", 4000}} {
+	}{{&f.Name, "name", 500}, {&f.Composition, "composition", 200}, {&f.Color, "color", 40}, {&f.Location, "location", 160}, {&f.Shop, "shop", 160}, {&f.Notes, "notes", 4000}} {
 		if e := textField(v.s, v.field, v.max); e != nil {
 			return e
 		}

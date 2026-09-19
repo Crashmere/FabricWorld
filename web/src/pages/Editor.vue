@@ -468,7 +468,7 @@ onUnmounted(() => {
           <label
             >布料名称<input
               v-model="f.name"
-              maxlength="100"
+              maxlength="500"
               placeholder="例如：蓝色小花棉布"
               :aria-invalid="errorField === 'name'"
           /></label>

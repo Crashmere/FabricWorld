@@ -106,6 +106,7 @@ func (s *Store) Handler(assets fs.FS) http.Handler {
 			return nil
 		}
 	}
+	handle("POST /api/integrations/ledger", s.importLedger)
 	handle("POST /api/fabrics", write("save"))
 	handle("PUT /api/fabrics/{id}", write("save"))
 	handle("DELETE /api/fabrics/{id}", write("delete"))

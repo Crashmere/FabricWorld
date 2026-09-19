@@ -224,7 +224,7 @@ func (s *Store) Cleanup(ctx context.Context) error {
 	if _, e = tx.ExecContext(ctx, "DELETE FROM media WHERE (fabric_id IS NULL AND created_at<?) OR removed_at<?", stale, cut); e != nil {
 		return e
 	}
-	if _, e = tx.ExecContext(ctx, "DELETE FROM operations WHERE created_at<?", time.Now().UTC().Add(-7*24*time.Hour).Format(time.RFC3339Nano)); e != nil {
+	if _, e = tx.ExecContext(ctx, "DELETE FROM operations WHERE created_at<? AND fingerprint NOT LIKE 'ledger:%'", time.Now().UTC().Add(-7*24*time.Hour).Format(time.RFC3339Nano)); e != nil {
 		return e
 	}
 	rows, e := tx.QueryContext(ctx, "SELECT id FROM media")
