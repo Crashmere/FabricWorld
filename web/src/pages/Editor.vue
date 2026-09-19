@@ -585,7 +585,7 @@ onUnmounted(() => {
                   >标签<input v-model="tags" placeholder="衬衫，花卉，春夏"
                 /></label>
               </div>
-              <div class="field-row">
+              <div class="field-row purchase-fields">
                 <label
                   >购买日期<input v-model="f.purchaseDate" type="date" /></label
                 ><label

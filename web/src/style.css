@@ -981,9 +981,16 @@ details[open] > summary > svg {
 }
 .field-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 15px;
   margin-top: 20px;
+}
+.field-row > label {
+  min-width: 0;
+}
+.purchase-fields input {
+  min-height: 48px;
+  max-width: 100%;
 }
 .save-bar {
   position: fixed;
@@ -1939,10 +1946,9 @@ details[open] > summary > svg {
   .field-row label {
     font-size: 13px;
   }
-  .field-row input[type="date"] {
-    max-width: 100%;
-    padding-left: 8px;
-    padding-right: 4px;
+  .purchase-fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
   }
   .save-bar {
     padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
