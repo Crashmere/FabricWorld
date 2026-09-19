@@ -150,15 +150,19 @@ onMounted(load);
             <RouterLink
               :to="'/fabrics/' + fabric.id + '/edit'"
               class="button primary"
-              ><Icon name="edit" />编辑布料</RouterLink
-            ><RouterLink
-              :to="'/fabrics/' + fabric.id + '/edit?mode=remnant'"
-              class="button secondary"
-              ><Icon name="scissors" />更新余料</RouterLink
+              ><Icon name="edit" />编辑资料</RouterLink
             >
           </div>
           <div class="detail-block">
-            <h2><Icon name="ruler" />剩余尺寸</h2>
+            <div class="stock-heading">
+              <h2><Icon name="ruler" />剩余尺寸</h2>
+              <RouterLink
+                v-if="!fabric.deletedAt && fabric.status !== 'used'"
+                :to="'/fabrics/' + fabric.id + '/remnant'"
+                class="button secondary"
+                ><Icon name="scissors" :size="16" />更新余料</RouterLink
+              >
+            </div>
             <p v-if="!fabric.pieces.length" class="muted">这块布料已经用完。</p>
             <div v-for="(p, i) in fabric.pieces" :key="i" class="piece-summary">
               <span class="piece-index">{{

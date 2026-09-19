@@ -205,15 +205,29 @@ func (s *Store) Write(ctx context.Context, id, key, fp, action string, in Fabric
 			return nil, fail(410, "expired", "回收期限已过")
 		}
 		f.DeletedAt = nil
-	case "save", "remnant":
+	case "save":
 		in.ID = f.ID
 		in.CreatedAt = f.CreatedAt
 		in.DeletedAt = nil
 		in.Photos = nil
-		if action == "remnant" && in.Status != "used" {
-			in.Status = "using"
-		}
 		f = in
+		if e = f.Validate(); e != nil {
+			return nil, e
+		}
+	case "remnant":
+		if before == nil {
+			return nil, fail(400, "existing_required", "请先建立布料记录，再更新余料")
+		}
+		if in.Status != "" && in.Status != "unused" && in.Status != "using" && in.Status != "used" {
+			return nil, invalid("status", "请选择还有剩余或已经用完")
+		}
+		// Old clients may still send the full form. Only stock fields belong
+		// to this action; preserve all descriptive fields and photo ownership.
+		f.Pieces = in.Pieces
+		f.Status = "using"
+		if in.Status == "used" {
+			f.Status = "used"
+		}
 		if e = f.Validate(); e != nil {
 			return nil, e
 		}
@@ -226,7 +240,7 @@ func (s *Store) Write(ctx context.Context, id, key, fp, action string, in Fabric
 	}
 	f.UpdatedAt = now()
 	f.Photos = nil
-	if action == "save" || action == "remnant" {
+	if action == "save" {
 		for _, mid := range f.PhotoIDs {
 			var owner, removed sql.NullString
 			var created string
@@ -248,7 +262,7 @@ func (s *Store) Write(ctx context.Context, id, key, fp, action string, in Fabric
 	if e != nil {
 		return nil, e
 	}
-	if action == "save" || action == "remnant" {
+	if action == "save" {
 		_, e = tx.ExecContext(ctx, "UPDATE media SET removed_at=? WHERE fabric_id=? AND removed_at IS NULL", f.UpdatedAt, f.ID)
 		if e != nil {
 			return nil, e

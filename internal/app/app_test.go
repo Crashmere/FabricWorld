@@ -14,6 +14,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -152,6 +153,78 @@ func TestStockFilterAndTrash(t *testing.T) {
 	}
 	if n != 4 {
 		t.Fatal("missing history", n)
+	}
+}
+func TestRemnantPreservesDetailsAndPhotoOwnership(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	m := Media{ID: ID(), Width: 100, Height: 60, Bytes: 1234, CreatedAt: now()}
+	metadata, _ := json.Marshal(m)
+	if _, e := s.DB.Exec("INSERT INTO media(id,body,created_at) VALUES(?,?,?)", m.ID, string(metadata), m.CreatedAt); e != nil {
+		t.Fatal(e)
+	}
+	f := example()
+	f.PhotoIDs = []string{m.ID}
+	f.Notes, f.Shop = "保留这段备注", "布料店"
+	f = save(t, s, f)
+	f.Pieces[0].Length = "240"
+	f = save(t, s, f)
+	if f.Status != "unused" {
+		t.Fatal("a measurement correction consumed fabric")
+	}
+	in := Fabric{Revision: f.Revision, Pieces: []Piece{{Width: "150", Length: "180", Unit: "cm", Count: 1}}, Status: "unused", Name: "must be ignored", PhotoIDs: []string{ID()}, Price: "999"}
+	k := ID()
+	body, e := s.Write(ctx, f.ID, k, "remnant-request", "remnant", in)
+	if e != nil {
+		t.Fatal(e)
+	}
+	var after Fabric
+	if e = json.Unmarshal(body, &after); e != nil {
+		t.Fatal(e)
+	}
+	if after.Status != "using" || after.Revision != f.Revision+1 || len(after.Pieces) != 1 || *after.Pieces[0].LengthMM != 1800 {
+		t.Fatal("incorrect stock update", after)
+	}
+	expected := f
+	expected.Status, expected.Pieces = after.Status, after.Pieces
+	expected.Revision, expected.UpdatedAt = after.Revision, after.UpdatedAt
+	if !reflect.DeepEqual(expected, after) {
+		t.Fatal("remnant altered descriptive data or photos")
+	}
+	var untouched bool
+	if e = s.DB.QueryRow("SELECT fabric_id=? AND removed_at IS NULL FROM media WHERE id=?", f.ID, m.ID).Scan(&untouched); e != nil || !untouched {
+		t.Fatal("photo association changed", e)
+	}
+	replayed, e := s.Write(ctx, f.ID, k, "remnant-request", "remnant", in)
+	if e != nil || !bytes.Equal(body, replayed) {
+		t.Fatal("remnant replay differs", e)
+	}
+	if _, e = s.Write(ctx, f.ID, ID(), "stale", "remnant", in); e == nil {
+		t.Fatal("stale remnant overwrote newer state")
+	}
+	if _, e = s.Write(ctx, "", ID(), "new", "remnant", in); e == nil {
+		t.Fatal("remnant created new fabric")
+	}
+	in.Revision, in.Status = after.Revision, "used"
+	if _, e = s.Write(ctx, f.ID, ID(), "invalid-stock", "remnant", in); e == nil {
+		t.Fatal("used status accepted leftover pieces")
+	}
+	body, e = s.Write(ctx, f.ID, ID(), "used", "remnant", Fabric{Revision: after.Revision, Status: "used", Pieces: []Piece{}})
+	if e != nil {
+		t.Fatal(e)
+	}
+	json.Unmarshal(body, &after)
+	if after.Status != "used" || len(after.Pieces) != 0 || len(after.Photos) != 1 || after.Name != f.Name {
+		t.Fatal("used lost record details")
+	}
+	var history string
+	if e = s.DB.QueryRow("SELECT body FROM changes WHERE fabric_id=? AND revision=?", f.ID, after.Revision).Scan(&history); e != nil {
+		t.Fatal(e)
+	}
+	var change Change
+	json.Unmarshal([]byte(history), &change)
+	if change.Action != "remnant" || change.Before.Pieces[0].Length != "180" || len(change.After.Pieces) != 0 {
+		t.Fatal("missing stock history")
 	}
 }
 func TestUploadBackupRestore(t *testing.T) {

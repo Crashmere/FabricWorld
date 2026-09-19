@@ -1110,6 +1110,139 @@ details[open] > summary > svg {
 .detail-block > p {
   font-size: 15px;
 }
+.stock-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 15px;
+}
+.stock-heading h2 {
+  margin-bottom: 0;
+}
+.stock-heading .button {
+  min-height: 44px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+.remnant-page {
+  max-width: 680px;
+  padding-bottom: 120px;
+}
+.remnant-page .back-link {
+  margin-bottom: 8px;
+}
+.remnant-page .page-heading {
+  margin-bottom: 18px;
+}
+.remnant-page .save-bar {
+  padding-left: max(20px, calc((100vw - 680px) / 2));
+  padding-right: max(20px, calc((100vw - 680px) / 2));
+}
+.remnant-page input,
+.remnant-page select {
+  scroll-margin-bottom: 110px;
+  scroll-margin-top: 20px;
+}
+.remnant-context {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 16px;
+  min-width: 0;
+}
+.remnant-context img,
+.remnant-context-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+.remnant-context-icon {
+  display: grid;
+  place-items: center;
+  background: #e8ede3;
+  color: var(--green);
+}
+.remnant-context > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.remnant-context strong {
+  font-size: 17px;
+}
+.remnant-context p {
+  color: #74806d;
+  font-size: 13px;
+  margin-top: 5px;
+}
+.stock-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.stock-choice label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 15px 8px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.stock-choice label.selected {
+  border-color: var(--green);
+  background: #f0f5ed;
+  color: var(--green);
+}
+.stock-choice input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--green);
+}
+.remnant-instructions h2 {
+  font-size: 17px;
+}
+.remnant-instructions p,
+.previous-dimensions {
+  font-size: 13px;
+  line-height: 1.7;
+  color: #74806d;
+  margin-top: 8px;
+}
+.form-panel .previous-dimensions summary {
+  display: list-item;
+  list-style: disclosure-closed inside;
+  font-size: 12px;
+}
+.form-panel .previous-dimensions[open] summary {
+  list-style-type: disclosure-open;
+}
+.used-explanation {
+  text-align: center;
+  padding: 18px 4px;
+  color: var(--green);
+}
+.used-explanation > svg {
+  display: block;
+  margin: 0 auto 12px;
+}
+.used-explanation strong {
+  display: block;
+  font-size: 17px;
+}
+.used-explanation p {
+  font-size: 13px;
+  line-height: 1.8;
+  color: #74806d;
+  margin-top: 10px;
+}
 .piece-summary {
   display: flex;
   align-items: flex-start;

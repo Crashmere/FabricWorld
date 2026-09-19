@@ -9,13 +9,12 @@ import {
   statuses,
   type Fabric,
   type Photo,
-  type Piece,
 } from "../types";
 import Icon from "../components/Icon.vue";
+import PieceFields from "../components/PieceFields.vue";
 const route = useRoute(),
   router = useRouter(),
-  editing = Boolean(route.params.id),
-  remnant = route.query.mode === "remnant";
+  editing = Boolean(route.params.id);
 const f = ref<Fabric>(newFabric()),
   loading = ref(editing),
   saving = ref(false),
@@ -127,18 +126,6 @@ function removePhoto(id: string) {
   f.value.photos = f.value.photos.filter((p) => p.id !== id);
   f.value.photoIds = f.value.photos.map((p) => p.id);
 }
-function changeUnit(p: Piece, e: Event) {
-  const next = (e.target as HTMLSelectElement).value as "m" | "cm";
-  if (next === p.unit) return;
-  for (const field of ["width", "length"] as const) {
-    const raw = p[field];
-    if (raw && /^\d+(\.\d+)?$/.test(raw)) {
-      const mm = Math.round(Number(raw) * (p.unit === "m" ? 1000 : 10));
-      p[field] = String(mm / (next === "m" ? 1000 : 10));
-    }
-  }
-  p.unit = next;
-}
 function changeStatus(e: Event) {
   const status = (e.target as HTMLSelectElement).value as Fabric["status"];
   if (
@@ -165,7 +152,7 @@ async function save() {
     .split(/[，,、]/)
     .map((x) => x.trim())
     .filter(Boolean);
-  const body = { ...f.value, action: remnant ? "remnant" : "save" };
+  const body = { ...f.value, action: "save" };
   const text = JSON.stringify(body);
   if (lastBody && lastBody !== text) {
     if (uncertain) {
@@ -317,12 +304,12 @@ onUnmounted(() => {
           {{ editing ? "EDIT YOUR FABRIC" : "A NEW ADDITION" }}
         </div>
         <h1>
-          {{ remnant ? "更新余料" : editing ? "编辑布料" : "记录新布料" }}
+          {{ editing ? "编辑资料" : "记录新布料" }}
         </h1>
         <p>
           {{
-            remnant
-              ? "记下现在剩下的尺寸，保留每一次创作的变化。"
+            editing
+              ? "补充照片、材质、收纳位置和购买信息。"
               : "先拍张照片，其他信息可以慢慢补充。"
           }}
         </p>
@@ -536,98 +523,37 @@ onUnmounted(() => {
           ></label>
         </section>
         <section class="form-panel">
-          <div class="section-title">
-            <h2>
-              <span class="section-number">02</span
-              >{{ remnant ? "剩余尺寸" : "尺寸与状态" }}
-            </h2>
-          </div>
-          <label
-            >当前状态<select :value="f.status" @change="changeStatus">
-              <option
-                v-for="(label, value) in statuses"
-                :key="value"
-                :value="value"
-              >
-                {{ label }}
-              </option>
-            </select></label
+          <details
+            :open="
+              !editing || errorField === 'pieces' || errorField === 'status'
+            "
           >
-          <p v-if="f.status === 'used'" class="field-hint">
-            已用完，没有剩余布片。以前的尺寸保留在修改历史中。
-          </p>
-          <div v-for="(p, i) in f.pieces" :key="i" class="piece-editor">
-            <div class="piece-heading">
-              <strong>布片 {{ i + 1 }}</strong
-              ><button
-                v-if="f.pieces.length > 1"
-                type="button"
-                class="icon-button"
-                :aria-label="'删除布片 ' + (i + 1)"
-                @click="f.pieces.splice(i, 1)"
-              >
-                <Icon name="close" :size="17" />
-              </button>
-            </div>
-            <div class="dimensions-row">
+            <summary>
+              <span class="section-number">02</span>
+              <h2>{{ editing ? "修正尺寸或状态" : "尺寸与状态" }}</h2>
+              <Icon name="chevron" :size="17" />
+            </summary>
+            <div class="details-fields">
+              <p v-if="editing" class="field-hint">
+                补测或更正录入信息时在这里修改；使用后记录剩余布片，请从详情页选择“更新余料”。
+              </p>
               <label
-                >幅宽<input
-                  v-model="p.width"
-                  inputmode="decimal"
-                  placeholder="待测量"
-                  :aria-label="'布片 ' + (i + 1) + ' 幅宽'" /></label
-              ><span class="dimension-cross">×</span
-              ><label
-                >长度<input
-                  v-model="p.length"
-                  inputmode="decimal"
-                  placeholder="待测量"
-                  :aria-label="'布片 ' + (i + 1) + ' 长度'" /></label
-              ><label class="unit-field"
-                >单位<select
-                  :value="p.unit"
-                  :aria-label="'布片 ' + (i + 1) + ' 单位'"
-                  @change="changeUnit(p, $event)"
-                >
-                  <option value="cm">cm</option>
-                  <option value="m">m</option>
+                >当前状态<select :value="f.status" @change="changeStatus">
+                  <option
+                    v-for="(label, value) in statuses"
+                    :key="value"
+                    :value="value"
+                  >
+                    {{ label }}
+                  </option>
                 </select></label
               >
+              <p v-if="f.status === 'used'" class="field-hint">
+                已用完，没有剩余布片。以前的尺寸保留在修改历史中。
+              </p>
+              <PieceFields v-else v-model="f.pieces" />
             </div>
-            <div class="piece-bottom">
-              <label class="quantity"
-                >相同尺寸片数<input
-                  v-model.number="p.count"
-                  type="number"
-                  min="1"
-                  max="999"
-                  inputmode="numeric" /></label
-              ><label class="check-label"
-                ><input
-                  v-model="p.irregular"
-                  type="checkbox"
-                />不规则余料</label
-              >
-            </div>
-            <label v-if="p.irregular"
-              >形状备注<input
-                v-model="p.note"
-                maxlength="200"
-                placeholder="例如：右下角缺了一块，尺寸为最大宽长"
-            /></label>
-          </div>
-          <button
-            v-if="f.status !== 'used'"
-            class="text-button"
-            type="button"
-            :disabled="f.pieces.length >= 50"
-            @click="f.pieces.push(newPiece())"
-          >
-            <Icon name="plus" :size="17" />添加另一组尺寸
-          </button>
-          <p class="field-hint">
-            可以先留空，测量后再补充。不同尺寸的余料分组记录。
-          </p>
+          </details>
         </section>
         <section class="form-panel">
           <details
