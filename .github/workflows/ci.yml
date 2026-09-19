@@ -35,7 +35,7 @@ jobs:
           bin/fabricworld init --data .local/e2e-data
           bin/fabricworld serve --data .local/e2e-data --with-prefix &
           cd web
-          npx playwright install --with-deps chromium
+          npx playwright install --with-deps chromium webkit
           PW_CHANNEL=chromium npm run test:e2e
       - run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o bin/fabricworld-linux-amd64 ./cmd/fabricworld
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a

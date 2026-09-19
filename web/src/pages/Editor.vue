@@ -587,7 +587,11 @@ onUnmounted(() => {
               </div>
               <div class="field-row purchase-fields">
                 <label
-                  >购买日期<input v-model="f.purchaseDate" type="date" /></label
+                  >购买日期<span class="date-input">
+                    <input
+                      v-model="f.purchaseDate"
+                      type="date"
+                    /> </span></label
                 ><label
                   >购买总价 / 元<input
                     v-model="f.price"

@@ -1,6 +1,8 @@
 # 检查与发布
 
-仓库为 public。推送 main / PR 运行 Build and verify：安装官方 libvips/HEIC 解码器，前端构建，Go race 测试与 vet、前端单测、shell 语法、隔离 Chromium 业务流程，再构建 Linux amd64 产物。部署独立使用手动 Deploy FabricWorld 工作流，只允许 main，并在发送前核对当前 main 提交。
+仓库为 public。推送 main / PR 运行 Build and verify：安装官方 libvips/HEIC 解码器，前端构建，Go race 测试与 vet、前端单测、shell 语法、隔离 Chromium 业务流程及 WebKit 购买日期回归，再构建 Linux amd64 产物。部署独立使用手动 Deploy FabricWorld 工作流，只允许 main，并在发送前核对当前 main 提交。
+
+Playwright 的 chromium 项目运行全部流程；webkit-purchase 项目使用 iPhone 视口运行 purchase.spec.ts。WebKit 自动化仍是桌面构建，不等同真实 iOS。日期回归额外模拟 padding 被加到百分比宽度的盒模型，以覆盖 WebKit 301648 对应的布局风险。
 
 production 环境 secrets：SSH_HOST、SSH_USER、SSH_PRIVATE_KEY、SSH_KNOWN_HOSTS。通过已受信连接核实主机公钥；不关闭严格主机校验。部署账号 fabricworld-deploy 的 authorized_keys 使用 restrict 和强制命令，只有 `deploy <commit> <sha256>`，没有 shell/SCP/端口转发。root 管理强制命令、发布脚本和 sudoers。
 

@@ -992,6 +992,43 @@ details[open] > summary > svg {
   min-height: 48px;
   max-width: 100%;
 }
+.date-input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin-top: 8px;
+  padding: 12px 13px;
+  border: 1px solid #dfe3d9;
+  border-radius: 9px;
+  background: #fff;
+}
+.date-input:focus-within {
+  border-color: #6a927b;
+  box-shadow: 0 0 0 3px #386a5610;
+}
+.date-input input[type="date"] {
+  /* iOS adds padding to a date input's 100% width (WebKit bug 301648).
+     Keep the native picker, but put all box decoration on the wrapper. */
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+}
+.date-input input::-webkit-date-and-time-value {
+  min-height: 24px;
+  text-align: left;
+}
 .save-bar {
   position: fixed;
   bottom: 0;
