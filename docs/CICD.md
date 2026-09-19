@@ -8,4 +8,6 @@ setup-ci.sh 接受一份 Ed25519 公钥，拒绝已有身份；私钥只进入 G
 
 发布脚本验证尺寸、SHA-256 和提交格式，保存旧程序，停止 FabricWorld，生成数据库+图片备份，以应用身份运行候选 check，再原子替换启动。健康失败恢复旧程序；不自动恢复数据库。发布和每日备份可能锁冲突，发布失败时旧程序重启并报告错误。
 
+`bash deploy/test-release.sh` 在 Linux 临时目录使用模拟服务检查上述失败分支与成功分支；实际发布脚本保留固定路径和 root 检查。CI 与发布工作流都运行此测试，不在正式实例上制造故障。
+
 每次发布保留 releases/ 中的候选、previous、metadata、result，成功后更新 current-commit。历史和 before-deploy 备份暂由运维定期清理（先明确保留点）；daily 自动保留 14 份。首次安装由管理员使用 install.sh，后续手动发布通过 CI 入口验证。

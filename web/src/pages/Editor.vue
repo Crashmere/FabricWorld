@@ -176,6 +176,10 @@ async function save() {
   }
   lastBody = text;
   saving.value = true;
+  uncertain = true;
+  // Persist before sending: a reload can happen after the server commits but
+  // before the response arrives. Keep the original key until it is resolved.
+  persist();
   try {
     const result = await write<Fabric>(
       editing ? "fabrics/" + route.params.id : "fabrics",

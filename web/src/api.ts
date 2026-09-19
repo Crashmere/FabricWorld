@@ -54,7 +54,11 @@ export async function request<T>(
       e.field,
     );
   }
-  return response.json();
+  try {
+    return await response.json();
+  } catch {
+    throw new APIError(0, "response", "响应未完整收到，请查询提交结果或重试。");
+  }
 }
 export async function write<T>(
   path: string,

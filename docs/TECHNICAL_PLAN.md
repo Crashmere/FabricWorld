@@ -1,6 +1,6 @@
 # FabricWorld 技术方案
 
-状态：已审核并进入实施。日期：2026-09-19。当前实现与验证以 ARCHITECTURE、OPERATIONS 和 VERIFICATION 为准。
+状态：已审核设计基线，核心实现及首次安装已完成。日期：2026-09-19。以下描述规划时的取舍，当前实现与验证以 ARCHITECTURE、OPERATIONS 和 VERIFICATION 为准。
 
 本方案为用户已审核的设计基线；随后明确 GitHub 仓库使用 public。文中的性能指标仍是目标，是否达成以验收文档为准。
 
@@ -25,7 +25,7 @@
 
 2026-09-19 通过本地检查、受信 SSH 别名 `ali` 和 GitHub 只读接口核对：
 
-- 开始规划时当前目录为空，未初始化 Git；本轮只新增方案及文档入口。当前 GitHub 身份为 `Crashmere`，该身份下未查到 `FabricWorld` 仓库。仓库创建前会再次检查。
+- 开始规划时当前目录为空；实施后已建立 `Crashmere/FabricWorld` public 仓库。
 - 显式读取了服务器 `/opt/AGENTS.md`；远端四份共享运维参考文档与本地维护源的 SHA-256 一致。
 - ali 为 2 vCPU、约 1.7 GiB 内存；核对时可用内存约 1.25 GiB，无 swap；40 GiB 根盘约有 33 GiB 可用。资源余量不是容量保证。
 - Nginx 当前仅配置 HTTP 80，以路径分发应用；Ledger 使用 `127.0.0.1:18080`，FeeTable 使用 `127.0.0.1:18081`。两个服务与 Nginx 均 active，代理健康接口均成功。

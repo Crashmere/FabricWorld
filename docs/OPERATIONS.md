@@ -86,6 +86,8 @@ vips --version
 
 常见失败：415 文件类型不支持；422 HEIC 解码或超限；429 图片处理/备份锁/限速；507 磁盘或媒体配额；409 多设备版本冲突。缺库时查目录、权限与备份，不执行 init。
 
+图片处理支持已验证的 libvips 8.15/8.18，色彩参数使用二者共用的 `--export-profile=srgb`。8.15 不支持新版名称 `--output-profile`；转换失败会在 journal 记录子进程错误，页面返回可读提示。
+
 ## 文档同步
 
 从已推送提交通过 git archive 导出 AGENTS.md 和受跟踪 docs/*.md 白名单，管理员同步到 /opt/fabricworld，最后写 docs/SOURCE（repository、commit、subdirectory、synced_at）。比较 SHA-256；不上传整个工作目录或 .local。共享清单单独维护在 agent-config/server-operations，按其 maintenance 同步 /opt/server-context 与 /opt/AGENTS.md。

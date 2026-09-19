@@ -29,13 +29,11 @@ test("mobile photo, dimensions, remnants, history, trash and restore", async ({
       x.fillRect(0, 0, 400, 300);
       return c.toDataURL("image/jpeg").split(",")[1]!;
     });
-    await page
-      .getByLabel("选择照片文件")
-      .setInputFiles({
-        name: "fabric.jpg",
-        mimeType: "image/jpeg",
-        buffer: Buffer.from(data, "base64"),
-      });
+    await page.getByLabel("选择照片文件").setInputFiles({
+      name: "fabric.jpg",
+      mimeType: "image/jpeg",
+      buffer: Buffer.from(data, "base64"),
+    });
   }
   await expect(page.getByText("1 / 10", { exact: true })).toBeVisible({
     timeout: 30000,
@@ -118,4 +116,54 @@ test("narrow layouts and camera selection", async ({ page }) => {
         fullPage: true,
       });
   }
+});
+test("reload during a committed write preserves its operation key", async ({
+  page,
+}) => {
+  const name = "提交恢复 " + Date.now();
+  let createdID = "";
+  let committed!: () => void;
+  let release!: () => void;
+  const committedPromise = new Promise<void>(
+    (resolve) => (committed = resolve),
+  );
+  const releasePromise = new Promise<void>((resolve) => (release = resolve));
+  await page.route("**/api/fabrics", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const response = await route.fetch();
+    expect(response.ok()).toBe(true);
+    createdID = (await response.json()).id;
+    committed();
+    await releasePromise;
+    await route.abort().catch(() => {});
+  });
+  await page.goto("./new");
+  await page.getByLabel("布料名称").fill(name);
+  await page.getByRole("button", { name: "保存布料", exact: true }).click();
+  await committedPromise;
+  const cached = await page.evaluate(() =>
+    JSON.parse(sessionStorage.getItem("fabricworld:draft:new")!),
+  );
+  expect(cached.uncertain).toBe(true);
+  expect(cached.operationKey).toHaveLength(32);
+  page.on("dialog", (dialog) => dialog.accept());
+  await page.reload();
+  release();
+  await expect(
+    page.getByText("已恢复本次浏览会话中的草稿。", { exact: false }),
+  ).toBeVisible();
+  await page.getByLabel("布料名称").fill(name + "修改");
+  await page.getByRole("button", { name: "保存布料", exact: true }).click();
+  await expect(
+    page.getByText("上次提交结果尚未确认，请先重新查询，避免重复保存。", {
+      exact: false,
+    }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "查询上次结果" }).click();
+  await expect(page).toHaveURL(new RegExp("/fabrics/" + createdID + "$"));
+  await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  const response = await page.request.get(
+    "./api/fabrics?q=" + encodeURIComponent(name),
+  );
+  expect((await response.json()).total).toBe(1);
 });
