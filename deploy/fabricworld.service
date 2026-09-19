@@ -1,0 +1,27 @@
+[Unit]
+Description=FabricWorld shared fabric collection
+After=network.target
+
+[Service]
+Type=simple
+User=fabricworld
+Group=fabricworld
+WorkingDirectory=/opt/fabricworld
+ExecStart=/opt/fabricworld/bin/fabricworld serve --data /opt/fabricworld/data
+Environment=VIPS_CONCURRENCY=1
+Environment=MALLOC_ARENA_MAX=2
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/fabricworld/data
+MemoryMax=640M
+CPUQuota=100%
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

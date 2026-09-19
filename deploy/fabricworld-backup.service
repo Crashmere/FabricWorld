@@ -1,0 +1,18 @@
+[Unit]
+Description=FabricWorld database and media backup
+
+[Service]
+Type=oneshot
+User=fabricworld
+Group=fabricworld
+ExecStart=/opt/fabricworld/bin/fabricworld daily --data /opt/fabricworld/data --out /opt/fabricworld/backups
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/fabricworld/data /opt/fabricworld/backups
+MemoryMax=256M
+CPUQuota=50%
+Nice=10
+TimeoutStartSec=15min

@@ -1,0 +1,13 @@
+/bin/
+/data/
+/backups/
+/.local/
+/web/node_modules/
+/web/dist/
+/web/test-results/
+/web/playwright-report/
+*.sqlite*
+*.db*
+.env*
+!.env.example
+.DS_Store
