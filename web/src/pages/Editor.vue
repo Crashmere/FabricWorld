@@ -51,6 +51,11 @@ function previewPhoto(id: string, src: string, alt: string) {
   photoPreview.value = { id, src, alt };
 }
 const uploading = computed(() => pending.value.some((p) => p.active));
+function syncMaterialPercentages() {
+  f.value.materialPercentages = Object.fromEntries(f.value.materials.map(m =>
+    [m, f.value.materials.length === 1 ? "100" : f.value.materialPercentages?.[m] ?? ""],
+  ));
+}
 const dirty = computed(
   () => initialized.value && JSON.stringify(f.value) !== initial,
 );
@@ -58,12 +63,14 @@ function toggleMaterial(m: string) {
   const i = f.value.materials.indexOf(m);
   if (i >= 0) f.value.materials.splice(i, 1);
   else if (f.value.materials.length < 20) f.value.materials.push(m);
+  syncMaterialPercentages();
 }
 function addMaterial() {
   const m = customMaterial.value.trim();
   if (m && !f.value.materials.includes(m) && f.value.materials.length < 20)
     f.value.materials.push(m);
   customMaterial.value = "";
+  syncMaterialPercentages();
 }
 async function processQueue() {
   if (uploading.value) return;
@@ -261,6 +268,7 @@ onMounted(async () => {
         ...newFabric(),
         name: source.name,
         materials: source.materials,
+        materialPercentages: source.materialPercentages,
         composition: source.composition,
         color: source.color,
         tags: source.tags,
@@ -268,6 +276,7 @@ onMounted(async () => {
         notes: source.notes,
       };
     }
+    syncMaterialPercentages();
     initial = JSON.stringify(f.value);
     tags.value = f.value.tags.join("，");
     try {
@@ -285,6 +294,7 @@ onMounted(async () => {
         draftRecovered.value = true;
       }
     } catch {}
+    syncMaterialPercentages();
     initialized.value = true;
     try {
       suggestions.value = await request("suggestions");
@@ -494,17 +504,33 @@ onUnmounted(() => {
           <div class="field-hint">有照片时可留空，保存后自动命名。</div>
           <div class="field-label">材质</div>
           <div class="material-options">
-            <button
+            <div
               v-for="m in [...new Set([...materials, ...f.materials])]"
               :key="m"
-              type="button"
+              class="material-option"
               :class="{ chosen: f.materials.includes(m) }"
+            >
+              <label v-if="f.materials.includes(m) && f.materials.length > 1" class="material-percentage">
+                <input
+                  v-model="f.materialPercentages![m]"
+                  type="text"
+                  inputmode="decimal"
+                  autocomplete="off"
+                  maxlength="20"
+                  placeholder="—"
+                  :aria-label="m + '百分比'"
+                  :aria-invalid="errorField === 'materialPercentages'"
+                /><span>%</span>
+              </label>
+              <span v-else-if="f.materials.includes(m)" class="material-single-percentage">100%</span>
+              <button type="button" :aria-label="m"
               :aria-pressed="f.materials.includes(m)"
               @click="toggleMaterial(m)"
             >
               {{ m
               }}<Icon v-if="f.materials.includes(m)" name="check" :size="13" />
             </button>
+            </div>
           </div>
           <div class="custom-material">
             <input
@@ -526,7 +552,7 @@ onUnmounted(() => {
             ><input
               v-model="f.composition"
               maxlength="200"
-              placeholder="例如：棉 70% / 麻 30%" /></label
+              placeholder="例如：表层棉麻，背面有涂层" /></label
           ><label
             >收纳位置 <span class="optional">选填</span
             ><input
@@ -614,7 +640,9 @@ onUnmounted(() => {
                 ><label
                   >购买总价 / 元<input
                     v-model="f.price"
+                    type="text"
                     inputmode="decimal"
+                    autocomplete="off"
                     placeholder="0.00"
                 /></label>
               </div>

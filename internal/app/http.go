@@ -279,7 +279,7 @@ func (s *Store) export(w http.ResponseWriter, r *http.Request) error {
 			for _, p := range f.Pieces {
 				pieces = append(pieces, fmt.Sprintf("%s×%s %s × %d", p.Width, p.Length, p.Unit, p.Count))
 			}
-			row := []string{f.Name, strings.Join(f.Materials, "、"), f.Composition, map[string]string{"unused": "未使用", "using": "使用中", "used": "已用完"}[f.Status], f.Location, strings.Join(pieces, "；"), f.Color, strings.Join(f.Tags, "、"), f.PurchaseDate, f.Shop, f.Price, f.Notes}
+			row := []string{f.Name, f.MaterialText(), f.Composition, map[string]string{"unused": "未使用", "using": "使用中", "used": "已用完"}[f.Status], f.Location, strings.Join(pieces, "；"), f.Color, strings.Join(f.Tags, "、"), f.PurchaseDate, f.Shop, f.Price, f.Notes}
 			for i := range row {
 				row[i] = csvText(row[i])
 			}

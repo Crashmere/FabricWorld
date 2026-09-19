@@ -20,7 +20,9 @@
 | GET /media/{id}/main | 标准 JPEG；仅有效暂存或未删除记录图片 |
 | GET /media/{id}/thumb | WebP 缩略图 |
 
-Fabric 包含 name、materials、composition、color、tags、status、location、purchaseDate、shop、price、notes、pieces、photoIds。Price 为十进制字符串，空表示未知。Piece 包含 width/length 十进制字符串、unit cm/m、count、irregular、note；widthMM/lengthMM 由服务器重算。只读字段 ID、时间、金额分值等由服务端覆盖，不能用于绕过校验。
+Fabric 包含 name、materials、materialPercentages、composition、color、tags、status、location、purchaseDate、shop、price、notes、pieces、photoIds。Price 为十进制字符串，空表示未知。Piece 包含 width/length 十进制字符串、unit cm/m、count、irregular、note；widthMM/lengthMM 由服务器重算。只读字段 ID、时间、金额分值等由服务端覆盖，不能用于绕过校验。
+
+materialPercentages 为可选的材质名称 → 十进制字符串映射，例如 `{"棉":"75.1250","麻":"50.5"}`。只保存已选材质的比例；单选固定 100，多选可以留空，不限制各项或总和为 100，不舍入输入。每项最多 20 字符，仅接受非负十进制数字或空串。composition 仍是独立说明文本。旧记录可以没有该字段，旧客户端修改时省略字段会保留仍选中的材质比例；传空对象或空串可明确清空多选比例。CSV 材质列带百分比，ZIP JSON 保留独立映射。
 
 Ledger 联动输入为 {transactionId,name,purchaseDate,price}，transactionId 为标准小写 UUID，日期与总价必填。该接口以来源 ID 代替 Idempotency-Key；相同 ID 永远指向首次创建的布料，后续调用只返回现有记录，不更新字段。来源记录长期保留，已删除/清理的布料返回 409/404，不重新创建。沿用本站来源检查和写入限速，不新增身份认证。
 

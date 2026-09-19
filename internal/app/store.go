@@ -206,6 +206,10 @@ func (s *Store) Write(ctx context.Context, id, key, fp, action string, in Fabric
 		}
 		f.DeletedAt = nil
 	case "save":
+		// Older clients omit this field. Keep ratios for the materials they retain.
+		if in.MaterialPercentages == nil && before != nil {
+			in.MaterialPercentages = before.MaterialPercentages
+		}
 		in.ID = f.ID
 		in.CreatedAt = f.CreatedAt
 		in.DeletedAt = nil

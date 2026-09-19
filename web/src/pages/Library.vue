@@ -2,7 +2,7 @@
 import { computed, ref, watch, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { base, request, write, key, toast, mediaURL } from "../api";
-import { dimensions, statuses, type Fabric, type FabricList } from "../types";
+import { dimensions, materialText, statuses, type Fabric, type FabricList } from "../types";
 import Icon from "../components/Icon.vue";
 import Modal from "../components/Modal.vue";
 const route = useRoute(),
@@ -315,7 +315,7 @@ onMounted(async () => {
           </div>
           <div class="card-body">
             <div class="card-material">
-              {{ f.materials.join(" / ") || "材质待补充" }}
+              {{ materialText(f) || "材质待补充" }}
             </div>
             <h2>{{ f.name }}</h2>
             <div class="card-meta">

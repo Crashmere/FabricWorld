@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import { APIError, key, mediaURL, request, toast, write } from "../api";
-import { dimensions, newPiece, type Fabric, type Piece } from "../types";
+import { dimensions, materialText, newPiece, type Fabric, type Piece } from "../types";
 import Icon from "../components/Icon.vue";
 import Modal from "../components/Modal.vue";
 import PieceFields from "../components/PieceFields.vue";
@@ -196,7 +196,7 @@ onUnmounted(() => window.removeEventListener("beforeunload", beforeUnload));
         /></span>
         <div>
           <strong>{{ fabric.name }}</strong>
-          <p>{{ fabric.materials.join(" / ") || "材质待补充" }}</p>
+          <p>{{ materialText(fabric) || "材质待补充" }}</p>
         </div>
       </div>
       <form id="remnant-form" @submit.prevent="submit">

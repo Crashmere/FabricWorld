@@ -49,7 +49,7 @@ bin/fabricworld serve --data .local/dev-data --with-prefix
 
 本地地址为 `http://127.0.0.1:18082/fabricworld/`。日常前端热更新可运行 web 的 npm run dev，API 代理到不带 --with-prefix 的本地后端。测试数据全部在 .local，Git 忽略。
 
-浏览器测试需要 Chromium（本地默认使用已安装 Chrome，可设 PW_CHANNEL=chromium）和 Playwright 官方 WebKit。只跑现有 Chrome 流程可用 `npm --prefix web run test:e2e -- --project=chromium`；完整检查还应运行 webkit-purchase。测试浏览器可安装在项目忽略目录：
+浏览器测试需要 Chromium（本地默认使用已安装 Chrome，可设 PW_CHANNEL=chromium）和 Playwright 官方 WebKit。只跑现有 Chrome 流程可用 `npm --prefix web run test:e2e -- --project=chromium`；完整检查还应运行 webkit-purchase 与 webkit-materials。测试浏览器可安装在项目忽略目录：
 
 ```sh
 PLAYWRIGHT_BROWSERS_PATH="$PWD/.local/playwright" node web/node_modules/playwright/cli.js install webkit
@@ -100,6 +100,10 @@ vips --version
 Ledger 从本机 HTTP 调用 /api/integrations/ledger，默认目标 127.0.0.1:18082；配置归 Ledger 的 LEDGER_FABRICWORLD_URL。FabricWorld 无新增配置、共享数据库或服务依赖；先发布 FabricWorld 接口，再发布 Ledger 弹窗。Nginx、运行身份和权限保持原有配置。
 
 每日清理长期保留 fingerprint 以 ledger: 开头的 operations（来源与首次结果），保证跨日重试不重复建布料。该记录与数据库一起备份恢复，不放到浏览器或 Ledger 数据库。旧版清理不认识此保留规则；长期回退旧版前停用联动并核对来源记录。恢复旧备份时需核对备份之后的同步记录，不把程序回退当成数据库恢复。
+
+## 材质字段兼容
+
+材质百分比作为可选 JSON 字段存入现有 schema v1，无需表结构迁移。新版服务兼容旧客户端省略百分比字段的保存请求；旧版服务不认识该字段，回退后编辑记录会丢失其百分比，回退期间应暂停资料编辑并保留发布前备份。
 
 ## 文档同步
 

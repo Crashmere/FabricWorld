@@ -165,6 +165,7 @@ func TestRemnantPreservesDetailsAndPhotoOwnership(t *testing.T) {
 	}
 	f := example()
 	f.PhotoIDs = []string{m.ID}
+	f.MaterialPercentages = map[string]string{"棉": "80.25", "麻": "30"}
 	f.Notes, f.Shop = "保留这段备注", "布料店"
 	f = save(t, s, f)
 	f.Pieces[0].Length = "240"
@@ -252,6 +253,7 @@ func TestUploadBackupRestore(t *testing.T) {
 	}
 	f := example()
 	f.PhotoIDs = []string{m.ID}
+	f.MaterialPercentages = map[string]string{"棉": "80.25", "麻": "30"}
 	f = save(t, s, f)
 	if len(f.Photos) != 1 {
 		t.Fatal("photo missing")
@@ -278,7 +280,7 @@ func TestUploadBackupRestore(t *testing.T) {
 	}
 	defer restored.DB.Close()
 	rf, e := restored.Get(ctx, f.ID)
-	if e != nil || rf.Name != f.Name || len(rf.Photos) != 1 {
+	if e != nil || rf.Name != f.Name || len(rf.Photos) != 1 || !reflect.DeepEqual(rf.MaterialPercentages, f.MaterialPercentages) {
 		t.Fatal("incomplete restore", e)
 	}
 	if _, e = s.Upload(ctx, ID(), strings.NewReader("<svg></svg>")); e == nil {
@@ -338,6 +340,7 @@ func TestHTTPBoundaries(t *testing.T) {
 	}
 	f := example()
 	f.Name = "=SUM(A1)"
+	f.MaterialPercentages = map[string]string{"棉": "80.25", "麻": "30"}
 	save(t, s, f)
 	res, e = http.Get(server.URL + "/api/export?format=csv")
 	if e != nil {
@@ -347,6 +350,9 @@ func TestHTTPBoundaries(t *testing.T) {
 	res.Body.Close()
 	if !bytes.Contains(b, []byte("'=SUM(A1)")) {
 		t.Fatal("CSV formula not escaped")
+	}
+	if !bytes.Contains(b, []byte("棉 80.25%、麻 30%")) {
+		t.Fatal("CSV lost material percentages")
 	}
 }
 func TestMissingDatabaseAndCleanup(t *testing.T) {

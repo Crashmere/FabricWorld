@@ -20,6 +20,7 @@ export interface Fabric {
   revision: number;
   name: string;
   materials: string[];
+  materialPercentages?: Record<string, string>;
   composition: string;
   color: string;
   tags: string[];
@@ -74,6 +75,7 @@ export const newFabric = (): Fabric => ({
   revision: 0,
   name: "",
   materials: [],
+  materialPercentages: {},
   composition: "",
   color: "",
   tags: [],
@@ -100,6 +102,12 @@ export function dimensions(p: Piece) {
     (p.count > 1 ? " · " + p.count + " 片" : "") +
     (p.irregular ? " · 不规则" : "")
   );
+}
+export function materialText(f: Pick<Fabric, "materials" | "materialPercentages">) {
+  return f.materials.map(material => {
+    const value = f.materials.length === 1 ? "100" : f.materialPercentages?.[material];
+    return value ? material + " " + value + "%" : material;
+  }).join(" / ");
 }
 export function dateText(v: string) {
   return v

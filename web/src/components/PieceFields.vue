@@ -33,7 +33,9 @@ function changeUnit(p: Piece, e: Event) {
       <label
         >幅宽<input
           v-model="p.width"
+          type="text"
           inputmode="decimal"
+          autocomplete="off"
           placeholder="待测量"
           :aria-label="'布片 ' + (i + 1) + ' 幅宽'"
       /></label>
@@ -41,7 +43,9 @@ function changeUnit(p: Piece, e: Event) {
       <label
         >长度<input
           v-model="p.length"
+          type="text"
           inputmode="decimal"
+          autocomplete="off"
           placeholder="待测量"
           :aria-label="'布片 ' + (i + 1) + ' 长度'"
       /></label>

@@ -55,26 +55,27 @@ type Media struct {
 	CreatedAt string `json:"createdAt"`
 }
 type Fabric struct {
-	ID           string   `json:"id"`
-	Revision     int      `json:"revision"`
-	Name         string   `json:"name"`
-	Materials    []string `json:"materials"`
-	Composition  string   `json:"composition"`
-	Color        string   `json:"color"`
-	Tags         []string `json:"tags"`
-	Status       string   `json:"status"`
-	Location     string   `json:"location"`
-	PurchaseDate string   `json:"purchaseDate"`
-	Shop         string   `json:"shop"`
-	Price        string   `json:"price"`
-	PriceCents   *int64   `json:"priceCents"`
-	Notes        string   `json:"notes"`
-	Pieces       []Piece  `json:"pieces"`
-	PhotoIDs     []string `json:"photoIds"`
-	Photos       []Media  `json:"photos"`
-	CreatedAt    string   `json:"createdAt"`
-	UpdatedAt    string   `json:"updatedAt"`
-	DeletedAt    *string  `json:"deletedAt"`
+	ID                  string            `json:"id"`
+	Revision            int               `json:"revision"`
+	Name                string            `json:"name"`
+	Materials           []string          `json:"materials"`
+	MaterialPercentages map[string]string `json:"materialPercentages,omitempty"`
+	Composition         string            `json:"composition"`
+	Color               string            `json:"color"`
+	Tags                []string          `json:"tags"`
+	Status              string            `json:"status"`
+	Location            string            `json:"location"`
+	PurchaseDate        string            `json:"purchaseDate"`
+	Shop                string            `json:"shop"`
+	Price               string            `json:"price"`
+	PriceCents          *int64            `json:"priceCents"`
+	Notes               string            `json:"notes"`
+	Pieces              []Piece           `json:"pieces"`
+	PhotoIDs            []string          `json:"photoIds"`
+	Photos              []Media           `json:"photos"`
+	CreatedAt           string            `json:"createdAt"`
+	UpdatedAt           string            `json:"updatedAt"`
+	DeletedAt           *string           `json:"deletedAt"`
 }
 type WriteInput struct {
 	Fabric
@@ -164,6 +165,18 @@ func (f *Fabric) Validate() error {
 	if e != nil {
 		return e
 	}
+	percentages := make(map[string]string, len(f.Materials))
+	for _, material := range f.Materials {
+		value := strings.TrimSpace(f.MaterialPercentages[material])
+		if len(f.Materials) == 1 {
+			value = "100"
+		}
+		if value != "" && (len(value) > 20 || !decimalPattern.MatchString(value)) {
+			return invalid("materialPercentages", "材质百分比请输入有效数字，可留空")
+		}
+		percentages[material] = value
+	}
+	f.MaterialPercentages = percentages
 	f.Tags, e = words(f.Tags, "tags")
 	if e != nil {
 		return e
@@ -230,4 +243,19 @@ func (f *Fabric) Validate() error {
 		f.Pieces = []Piece{}
 	}
 	return nil
+}
+
+func (f Fabric) MaterialText() string {
+	parts := make([]string, 0, len(f.Materials))
+	for _, material := range f.Materials {
+		value := f.MaterialPercentages[material]
+		if len(f.Materials) == 1 {
+			value = "100"
+		}
+		if value != "" {
+			material += " " + value + "%"
+		}
+		parts = append(parts, material)
+	}
+	return strings.Join(parts, "、")
 }

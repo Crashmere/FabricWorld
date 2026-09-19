@@ -21,6 +21,11 @@ export default defineConfig({
       testMatch: "**/purchase.spec.ts",
       use: { ...devices["iPhone 13"], browserName: "webkit" },
     },
+    {
+      name: "webkit-materials",
+      testMatch: "**/materials.spec.ts",
+      use: { ...devices["iPhone 13"], browserName: "webkit" },
+    },
   ],
   reporter: "list",
 });

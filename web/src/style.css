@@ -720,22 +720,54 @@ img {
   flex-wrap: wrap;
   gap: 8px;
 }
-.material-options button {
+.material-option {
   border: 1px solid #e2e7da;
   border-radius: 6px;
-  padding: 7px 13px;
-  min-height: 37px;
   display: flex;
   align-items: center;
-  gap: 5px;
+  max-width: 100%;
+  min-width: 0;
   font-size: 12px;
   color: #7e8a73;
   background: #fff;
 }
-.material-options button.chosen {
+.material-option.chosen {
   background: #edf3e8;
   border-color: #91ab83;
   color: var(--green);
+}
+.material-options button {
+  min-height: 40px;
+  padding: 7px 13px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  border-radius: 6px;
+}
+.material-options button svg {
+  flex-shrink: 0;
+}
+.material-percentage {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 3px;
+  padding-left: 6px;
+  font-size: 12px;
+}
+.material-percentage input {
+  width: 64px;
+  min-height: 36px;
+  margin: 0;
+  padding: 4px;
+  font-size: 16px;
+  text-align: center;
+  border-radius: 4px;
+}
+.material-single-percentage {
+  padding-left: 12px;
 }
 .custom-material {
   display: flex;

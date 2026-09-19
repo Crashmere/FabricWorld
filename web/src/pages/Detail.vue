@@ -5,6 +5,7 @@ import { request, write, key, toast, mediaURL } from "../api";
 import {
   dateText,
   dimensions,
+  materialText,
   statuses,
   type Fabric,
   type Change,
@@ -140,7 +141,7 @@ onMounted(load);
             }}</span>
             <h1>{{ fabric.name }}</h1>
             <div class="detail-materials">
-              {{ fabric.materials.join(" / ") || "材质待补充" }}
+              {{ materialText(fabric) || "材质待补充" }}
             </div>
             <p v-if="fabric.composition" class="muted">
               {{ fabric.composition }}
@@ -255,7 +256,7 @@ onMounted(load);
               <summary>查看当时的信息</summary>
               <p>
                 {{ h.after?.name }} ·
-                {{ h.after?.materials.join(" / ") || "材质待补充" }}
+                {{ h.after ? materialText(h.after) || "材质待补充" : "材质待补充" }}
               </p>
               <p>
                 {{ h.after?.pieces.map(dimensions).join("；") || "已用完" }}

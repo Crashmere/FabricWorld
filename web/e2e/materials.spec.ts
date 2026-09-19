@@ -1,0 +1,82 @@
+import { test, expect } from "@playwright/test";
+
+test("material percentages persist independently of notes with decimal inputs", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.goto("./new");
+  const name = "材质比例测试 " + Date.now();
+  await page.getByLabel("布料名称", { exact: true }).fill(name);
+  await page.getByRole("button", { name: "棉", exact: true }).click();
+  await expect(page.locator(".material-single-percentage")).toHaveText("100%");
+  await expect(page.getByLabel("棉百分比", { exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "保存布料", exact: true }).click();
+  await expect(page.locator(".detail-materials")).toHaveText("棉 100%");
+  const detailURL = page.url();
+  await page.getByRole("link", { name: "编辑资料", exact: true }).click();
+  await page.getByRole("button", { name: "麻", exact: true }).click();
+  const cotton = page.getByLabel("棉百分比", { exact: true });
+  const linen = page.getByLabel("麻百分比", { exact: true });
+  await cotton.fill("75.1250");
+  await linen.fill("50.5");
+  await page.getByLabel("自定义材质").fill("竹纤维");
+  await page.getByRole("button", { name: "添加", exact: true }).click();
+  const bamboo = page.getByLabel("竹纤维百分比", { exact: true });
+  await bamboo.fill("0");
+  await page.getByLabel("成分说明 选填").fill("背面有涂层");
+  await page.getByText("修正尺寸或状态", { exact: true }).click();
+  await page.getByText("更多细节", { exact: true }).click();
+  const widthInput = page.getByLabel("布片 1 幅宽", { exact: true });
+  const lengthInput = page.getByLabel("布片 1 长度", { exact: true });
+  const price = page.getByLabel("购买总价 / 元", { exact: true });
+  for (const input of [cotton, linen, bamboo, widthInput, lengthInput, price]) {
+    await expect(input).toHaveAttribute("type", "text");
+    await expect(input).toHaveAttribute("inputmode", "decimal");
+  }
+  await widthInput.fill("150.5");
+  await lengthInput.fill("200.5");
+  await price.fill("12.34");
+  for (const width of [320, 375, 1440]) {
+    await page.setViewportSize({ width, height: width === 1440 ? 900 : 667 });
+    await cotton.click();
+    await expect(page.getByRole("button", { name: "棉", exact: true })).toHaveAttribute("aria-pressed", "true");
+    expect(await cotton.evaluate(input => {
+      const box = input.getBoundingClientRect();
+      const name = input.closest(".material-option")!.querySelector("button")!.getBoundingClientRect();
+      return box.width >= 50 && box.height >= 36 && box.right <= name.left && box.left >= 0 && name.right <= innerWidth;
+    })).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: "../.local/materials-" + test.info().project.name + "-" + width + ".png" });
+  }
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.reload();
+  await expect(cotton).toHaveValue("75.1250");
+  await expect(linen).toHaveValue("50.5");
+  await expect(bamboo).toHaveValue("0");
+  await expect(page.getByLabel("成分说明 选填")).toHaveValue("背面有涂层");
+  await page.getByRole("button", { name: "保存修改", exact: true }).click();
+  await expect(page.locator(".detail-materials")).toHaveText("棉 75.1250% / 麻 50.5% / 竹纤维 0%");
+  const response = await page.request.get(detailURL.replace("/fabrics/", "/api/fabrics/"));
+  const stored = await response.json();
+  expect(stored.materialPercentages).toEqual({ 棉: "75.1250", 麻: "50.5", 竹纤维: "0" });
+  expect(stored.composition).toBe("背面有涂层");
+  expect(stored.pieces[0].widthMM).toBe(1505);
+  expect(stored.pieces[0].lengthMM).toBe(2005);
+  expect(stored.priceCents).toBe(1234);
+  await page.getByRole("link", { name: "编辑资料", exact: true }).click();
+  await expect(cotton).toHaveValue("75.1250");
+  await expect(linen).toHaveValue("50.5");
+  await bamboo.fill("");
+  await page.getByRole("button", { name: "保存修改", exact: true }).click();
+  await expect(page.locator(".detail-materials")).toHaveText("棉 75.1250% / 麻 50.5% / 竹纤维");
+  await page.goto("./new?copy=" + stored.id);
+  await expect(cotton).toHaveValue("75.1250");
+  await expect(linen).toHaveValue("50.5");
+  await expect(bamboo).toHaveValue("");
+  await expect(page.getByLabel("成分说明 选填")).toHaveValue("背面有涂层");
+  await page.getByRole("button", { name: "棉", exact: true }).click();
+  await page.getByRole("button", { name: "竹纤维", exact: true }).click();
+  await expect(page.locator(".material-single-percentage")).toHaveText("100%");
+  await page.getByRole("button", { name: "保存布料", exact: true }).click();
+  await expect(page.locator(".detail-materials")).toHaveText("麻 100%");
+  expect(errors).toEqual([]);
+});
