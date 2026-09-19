@@ -27,6 +27,7 @@ jobs:
       - run: npm --prefix web ci && npm --prefix web run build
       - run: go test -race ./... && go vet ./... && npm --prefix web test
       - run: for script in deploy/*.sh; do bash -n "$script"; done
+      - run: bash deploy/test-release.sh
       - run: go build -trimpath -o bin/fabricworld ./cmd/fabricworld
       - name: Browser flows
         run: |
