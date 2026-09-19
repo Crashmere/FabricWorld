@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"golang.org/x/sys/unix"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -186,6 +187,7 @@ func (s *Store) Upload(ctx context.Context, key string, r io.Reader) (Media, err
 	main := filepath.Join(tmp, "main.jpg")
 	thumb := filepath.Join(tmp, "thumb.webp")
 	if _, e = runImage(ictx, "vips", "thumbnail", input, main+"[Q=88,strip,background=248 247 243]", "2560", "--height=2560", "--size=down", "--output-profile=srgb", "--fail-on=error"); e != nil {
+		log.Printf("image conversion: %v", e)
 		return m, fail(422, "image_decode", "照片处理失败，请重试或换一张照片")
 	}
 	if _, e = runImage(ictx, "vips", "thumbnail", main, thumb+"[Q=80,strip]", "640", "--height=640", "--size=down"); e != nil {
