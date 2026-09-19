@@ -1704,28 +1704,26 @@ details[open] > summary > svg {
     display: none;
   }
   .overview {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     margin-bottom: 25px;
-    padding: 19px 16px;
-    justify-content: space-between;
+    padding: 19px 0;
     border-radius: 11px;
   }
   .overview > div:not(.overview-decoration) {
-    padding: 0 17px;
+    min-width: 0;
+    padding: 0 8px;
     flex-direction: column;
     gap: 8px;
-    align-items: flex-start;
-  }
-  .overview > div:first-child {
-    padding-left: 0;
-  }
-  .overview > div:nth-child(3) {
-    padding-right: 0;
+    align-items: center;
+    text-align: center;
   }
   .stat-number {
     font-size: 28px;
+    font-variant-numeric: tabular-nums;
   }
   .stat-label {
-    font-size: 10px;
+    font-size: 11px;
   }
   .search-row {
     gap: 8px;
@@ -2102,16 +2100,8 @@ details[open] > summary > svg {
     padding-left: 15px;
     padding-right: 15px;
   }
-  .overview {
-    padding-left: 13px;
-    padding-right: 13px;
-  }
-  .overview > div:not(.overview-decoration) {
-    padding-left: 13px;
-    padding-right: 13px;
-  }
   .stat-label {
-    font-size: 9px;
+    font-size: 10px;
   }
   .card-body {
     padding: 11px 9px;
