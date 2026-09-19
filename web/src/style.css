@@ -1830,7 +1830,7 @@ details[open] > summary > svg {
   .sort-select {
     margin-left: auto;
     margin-top: 5px;
-    margin-bottom: -5px;
+    margin-bottom: 8px;
   }
   .sort-select select {
     font-size: 11px;
