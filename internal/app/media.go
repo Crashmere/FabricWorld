@@ -186,7 +186,9 @@ func (s *Store) Upload(ctx context.Context, key string, r io.Reader) (Media, err
 	}
 	main := filepath.Join(tmp, "main.jpg")
 	thumb := filepath.Join(tmp, "thumb.webp")
-	if _, e = runImage(ictx, "vips", "thumbnail", input, main+"[Q=88,strip,background=248 247 243]", "2560", "--height=2560", "--size=down", "--output-profile=srgb", "--fail-on=error"); e != nil {
+	// export-profile is also accepted by newer libvips; output-profile is
+	// unavailable in the 8.15 packages shipped by the CI runner.
+	if _, e = runImage(ictx, "vips", "thumbnail", input, main+"[Q=88,strip,background=248 247 243]", "2560", "--height=2560", "--size=down", "--export-profile=srgb", "--fail-on=error"); e != nil {
 		log.Printf("image conversion: %v", e)
 		return m, fail(422, "image_decode", "照片处理失败，请重试或换一张照片")
 	}
