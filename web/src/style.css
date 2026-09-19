@@ -813,7 +813,17 @@ img {
   height: 100%;
   object-fit: cover;
 }
+.photo-preview-trigger {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: zoom-in;
+}
+.photo-preview-trigger:focus-visible {
+  outline-offset: -3px;
+}
 .cover-label {
+  pointer-events: none;
   position: absolute;
   left: 6px;
   top: 6px;
@@ -851,6 +861,7 @@ img {
   place-items: center;
 }
 .upload-status {
+  pointer-events: none;
   position: absolute;
   inset: 0;
   display: flex;
@@ -865,6 +876,7 @@ img {
   gap: 7px;
 }
 .upload-status button {
+  pointer-events: auto;
   background: #fff;
   color: #386a56;
   border-radius: 5px;
@@ -1426,6 +1438,15 @@ details[open] > summary > svg {
   justify-content: space-between;
   padding: 17px 23px;
   border-bottom: 1px solid var(--line);
+}
+.modal-wide {
+  max-width: 960px;
+}
+.photo-preview-error {
+  padding: 32px 24px;
+  text-align: center;
+  color: var(--green);
+  line-height: 1.7;
 }
 .modal > header h2 {
   font-size: 18px;

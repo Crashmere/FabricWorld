@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter, onBeforeRouteLeave } from "vue-router";
 import { APIError, key, mediaURL, request, toast, upload, write } from "../api";
 import {
@@ -12,6 +12,7 @@ import {
 } from "../types";
 import Icon from "../components/Icon.vue";
 import PieceFields from "../components/PieceFields.vue";
+import Modal from "../components/Modal.vue";
 const route = useRoute(),
   router = useRouter(),
   editing = Boolean(route.params.id);
@@ -43,6 +44,12 @@ type Pending = {
 const pending = ref<Pending[]>([]),
   camera = ref<HTMLInputElement>(),
   album = ref<HTMLInputElement>();
+const photoPreview = ref<{ id: string; src: string; alt: string } | null>(null);
+const previewFailed = ref(false);
+watch(() => photoPreview.value?.src, () => { previewFailed.value = false; });
+function previewPhoto(id: string, src: string, alt: string) {
+  photoPreview.value = { id, src, alt };
+}
 const uploading = computed(() => pending.value.some((p) => p.active));
 const dirty = computed(
   () => initialized.value && JSON.stringify(f.value) !== initial,
@@ -68,6 +75,10 @@ async function processQueue() {
       const photo = await upload(p.file, p.key, (n) => (p.progress = n));
       f.value.photos.push(photo);
       f.value.photoIds.push(photo.id);
+      if (photoPreview.value?.id === p.localId) {
+        previewPhoto(photo.id, mediaURL(photo.id, "main"), photoPreview.value.alt);
+        await nextTick();
+      }
       URL.revokeObjectURL(p.preview);
       pending.value = pending.value.filter((x) => x.localId !== p.localId);
     } catch (e) {
@@ -362,7 +373,11 @@ onUnmounted(() => {
             @drop.prevent="files($event.dataTransfer?.files || null)"
           >
             <div v-for="(p, i) in f.photos" :key="p.id" class="edit-photo">
-              <img :src="mediaURL(p.id)" :alt="'布料照片 ' + (i + 1)" /><span
+              <button type="button" class="photo-preview-trigger"
+                :aria-label="'查看照片 ' + (i + 1) + ' 大图'"
+                @click="previewPhoto(p.id, mediaURL(p.id, 'main'), '布料照片 ' + (i + 1))">
+                <img :src="mediaURL(p.id)" :alt="'布料照片 ' + (i + 1)" />
+              </button><span
                 v-if="i === 0"
                 class="cover-label"
                 >封面</span
@@ -397,11 +412,15 @@ onUnmounted(() => {
               :key="p.localId"
               class="edit-photo pending-photo"
             >
-              <img
-                :src="p.preview"
-                alt="待上传照片"
-                @error="($event.target as HTMLImageElement).style.opacity = '0'"
-              />
+              <button type="button" class="photo-preview-trigger"
+                :aria-label="'查看待上传照片 ' + p.file.name + ' 大图'"
+                @click="previewPhoto(p.localId, p.preview, p.file.name)">
+                <img
+                  :src="p.preview"
+                  alt="待上传照片"
+                  @error="($event.target as HTMLImageElement).style.opacity = '0'"
+                />
+              </button>
               <div class="upload-status">
                 <span>{{
                   p.error || (p.progress >= 95 ? "正在处理…" : p.progress + "%")
@@ -636,5 +655,14 @@ onUnmounted(() => {
         }}
       </button>
     </div>
+    <Modal v-if="photoPreview" title="照片预览" wide @close="photoPreview = null">
+      <p v-if="previewFailed" class="photo-preview-error" role="status">
+        {{ photoPreview.src.startsWith('blob:')
+          ? '这张照片暂时无法预览，上传完成后可查看大图。'
+          : '照片加载失败，请关闭后重新打开。' }}
+      </p>
+      <img v-else :key="photoPreview.src" class="lightbox-image"
+        :src="photoPreview.src" :alt="photoPreview.alt" @error="previewFailed = true" />
+    </Modal>
   </div>
 </template>

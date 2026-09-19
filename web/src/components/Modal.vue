@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 import Icon from "./Icon.vue";
-defineProps<{ title: string }>();
+defineProps<{ title: string; wide?: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 const box = ref<HTMLElement>();
 let previous: Element | null;
@@ -48,6 +48,7 @@ onUnmounted(() => {
       <section
         ref="box"
         class="modal"
+        :class="{ 'modal-wide': wide }"
         role="dialog"
         aria-modal="true"
         :aria-label="title"
