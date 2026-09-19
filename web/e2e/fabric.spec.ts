@@ -66,6 +66,7 @@ test("mobile photo, dimensions, remnants, history, trash and restore", async ({
   await expect(page.getByText("首次记录", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "删除布料", exact: true }).click();
   await page.getByRole("button", { name: "移入回收站", exact: true }).click();
+  await page.getByRole("button", { name: "打开菜单", exact: true }).click();
   await page.getByRole("link", { name: "回收站", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: /测试 · 蓝色棉麻/ }),

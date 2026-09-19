@@ -505,7 +505,7 @@ onUnmounted(() => {
           <div class="field-label">材质</div>
           <div class="material-options">
             <div
-              v-for="m in [...new Set([...materials, ...f.materials])]"
+              v-for="m in [...new Set([...materials, ...(suggestions.materials || []), ...f.materials])]"
               :key="m"
               class="material-option"
               :class="{ chosen: f.materials.includes(m) }"

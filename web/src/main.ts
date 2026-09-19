@@ -5,12 +5,14 @@ import Library from "./pages/Library.vue";
 import Editor from "./pages/Editor.vue";
 import Detail from "./pages/Detail.vue";
 import Remnant from "./pages/Remnant.vue";
+import Materials from "./pages/Materials.vue";
 import "./style.css";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: "/", component: Library },
     { path: "/trash", component: Library },
+    { path: "/materials", component: Materials },
     { path: "/new", component: Editor },
     { path: "/fabrics/:id", component: Detail },
     {

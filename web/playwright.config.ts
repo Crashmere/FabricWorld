@@ -23,7 +23,7 @@ export default defineConfig({
     },
     {
       name: "webkit-materials",
-      testMatch: "**/materials.spec.ts",
+      testMatch: ["**/materials.spec.ts", "**/material-menu.spec.ts"],
       use: { ...devices["iPhone 13"], browserName: "webkit" },
     },
   ],

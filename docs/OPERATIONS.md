@@ -105,6 +105,8 @@ Ledger 从本机 HTTP 调用 /api/integrations/ledger，默认目标 127.0.0.1:1
 
 材质百分比作为可选 JSON 字段存入现有 schema v1，无需表结构迁移。新版服务兼容旧客户端省略百分比字段的保存请求；旧版服务不认识该字段，回退后编辑记录会丢失其百分比，回退期间应暂停资料编辑并保留发布前备份。
 
+材质目录与批量移除复用当前布料 JSON、changes 和 operations，无新表或运行配置。移除也更新回收站记录，恢复布料不会重新带回已移除的材质。操作结果保留 7 天，遇到未知结果先用原键查询或重试；集合版本过期时重新核对当前目录。回退程序不会撤销已完成的批量移除，历史中保留修改前后快照。生产验收只读检查目录、页面及健康，批量写入回归使用隔离合成库。
+
 ## 文档同步
 
 从已推送提交通过 git archive 导出 AGENTS.md 和受跟踪 docs/*.md 白名单，管理员同步到 /opt/fabricworld，最后写 docs/SOURCE（repository、commit、subdirectory、synced_at）。比较 SHA-256；不上传整个工作目录或 .local。共享清单单独维护在 agent-config/server-operations，按其 maintenance 同步 /opt/server-context 与 /opt/AGENTS.md。

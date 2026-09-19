@@ -138,6 +138,14 @@ func (s *Store) Handler(assets fs.FS) http.Handler {
 		}
 		return e
 	})
+	handle("GET /api/materials", func(w http.ResponseWriter, r *http.Request) error {
+		v, e := s.Materials(r.Context())
+		if e == nil {
+			jsonResponse(w, 200, v)
+		}
+		return e
+	})
+	handle("POST /api/materials/remove", s.removeMaterialHTTP)
 	handle("GET /api/operations/{key}", func(w http.ResponseWriter, r *http.Request) error {
 		var result string
 		e := s.DB.QueryRowContext(r.Context(), "SELECT result FROM operations WHERE key=?", r.PathValue("key")).Scan(&result)

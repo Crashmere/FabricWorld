@@ -249,7 +249,9 @@ onMounted(load);
                     ? "恢复布料"
                     : h.action === "remnant"
                       ? "更新余料"
-                      : "编辑记录"
+                      : h.action === "remove_material"
+                        ? "移除材质"
+                        : "编辑记录"
             }}</strong
             ><time>{{ dateText(h.at) }}</time>
             <details>

@@ -168,22 +168,39 @@ img {
   display: block;
   flex-shrink: 0;
 }
-.site-header nav {
-  display: flex;
-  gap: 28px;
+.header-menu { position: relative; }
+.menu-toggle {
+  width: 44px; height: 44px; display: grid; place-items: center;
+  color: var(--green); border-radius: 8px;
 }
-.nav-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  min-height: 44px;
-  color: #85897f;
+.menu-toggle:hover, .menu-toggle[aria-expanded="true"] { background: #edf3e8; }
+.header-dropdown {
+  position: absolute; z-index: 40; top: calc(100% + 8px); right: 0;
+  width: 180px; max-width: calc(100vw - 32px); padding: 6px;
+  background: #fffdf9; border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 10px 30px #293b341c;
 }
-.nav-link.router-link-exact-active {
-  color: var(--green);
-  font-weight: 600;
+.header-dropdown a {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  font-size: 14px; min-height: 44px; border-radius: 6px; color: var(--green);
 }
+.header-dropdown a:hover, .header-dropdown a.router-link-exact-active { background: #edf3e8; }
+.page.materials-page { max-width: 800px; }
+.material-count-hint { margin-bottom: 16px; }
+.material-search { margin-bottom: 20px; }
+.material-list {
+  list-style: none; margin: 0; padding: 0; border: 1px solid var(--line);
+  border-radius: 12px; background: #fff; overflow: hidden;
+}
+.material-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 18px 16px;
+}
+.material-row + .material-row { border-top: 1px solid var(--line); }
+.material-info { min-width: 0; overflow-wrap: anywhere; }
+.material-info h2 { font-size: 16px; }
+.material-info p { margin-top: 5px; color: var(--muted); font-size: 12px; }
+.material-remove { flex-shrink: 0; padding: 9px 12px; font-size: 13px; }
 .page {
   max-width: 1240px;
   margin: auto;
@@ -1722,17 +1739,6 @@ details[open] > summary > svg {
     width: 33px;
     height: 33px;
   }
-  .site-header nav {
-    gap: 10px;
-  }
-  .nav-link {
-    gap: 5px;
-    font-size: 12px;
-  }
-  .nav-link svg {
-    width: 17px;
-    height: 17px;
-  }
   .page {
     margin: 0;
     padding: 30px 20px 105px;
@@ -2141,13 +2147,6 @@ details[open] > summary > svg {
   }
   .brand {
     font-size: 18px;
-  }
-  .nav-link span {
-    display: none;
-  }
-  .nav-link {
-    width: 36px;
-    justify-content: center;
   }
   .page {
     padding-left: 15px;
