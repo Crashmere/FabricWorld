@@ -165,11 +165,8 @@ img {
 .brand-mark {
   width: 40px;
   height: 40px;
-  display: grid;
-  place-items: center;
-  background: #e8ede3;
-  border-radius: 11px;
-  color: var(--green);
+  display: block;
+  flex-shrink: 0;
 }
 .site-header nav {
   display: flex;
@@ -1494,11 +1491,6 @@ details[open] > summary > svg {
   .brand-mark {
     width: 33px;
     height: 33px;
-    border-radius: 9px;
-  }
-  .brand-mark svg {
-    width: 21px;
-    height: 21px;
   }
   .site-header nav {
     gap: 10px;

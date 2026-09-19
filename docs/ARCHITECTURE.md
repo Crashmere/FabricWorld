@@ -30,6 +30,8 @@ schema v1，application_id 1178681932；WAL、外键、FULL 同步、5 秒 busy 
 
 ## 浏览器
 
+网站使用森林绿底的布卷与织纹图标，页头与浏览器 SVG 图标共用 `web/public/fabricworld.svg`；ICO 提供 16/32/48 px，Apple Touch 图标为 180 px。修改 SVG 后运行 `npm --prefix web run icons`（使用现有 libvips）重新生成两份位图；资源路径使用 Vite BASE_URL，支持子路径及详情页刷新。
+
 拍照 input 使用 capture=environment，相册多选分开。摄像头选择由手机系统决定；HTTP 下不使用 getUserMedia、Service Worker 或离线同步。上传以 XHR 显示进度，失败逐张重试；图片未完成需重试/移除后才能保存。
 
 文字与成功上传引用存于 sessionStorage，24 小时内可恢复；编辑草稿必须与服务端 revision 一致。刷新后未上传 File 无法恢复。保存成功才清除草稿；未知写入先查 operations，相同内容可用原键重试。界面用纯文本输出用户数据；来源检查、CSP、nosniff、请求上限降低跨站和文件风险，但不是身份鉴权。

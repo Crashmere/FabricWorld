@@ -2,6 +2,7 @@
 import { ref, onMounted, onUnmounted } from "vue";
 import { notice } from "./api";
 import Icon from "./components/Icon.vue";
+const brandIcon = import.meta.env.BASE_URL + "fabricworld.svg";
 const offline = ref(!navigator.onLine);
 const update = () => (offline.value = !navigator.onLine);
 onMounted(() => {
@@ -15,10 +16,10 @@ onUnmounted(() => {
 </script>
 <template>
   <header class="site-header">
-    <RouterLink class="brand" to="/" aria-label="FabricWorld 布料库"
-      ><span class="brand-mark"><Icon name="box" :size="25" /></span
-      ><span>Fabric<span class="brand-light">World</span></span></RouterLink
-    >
+    <RouterLink class="brand" to="/" aria-label="FabricWorld 布料库">
+      <img class="brand-mark" :src="brandIcon" width="40" height="40" alt="" />
+      <span>Fabric<span class="brand-light">World</span></span>
+    </RouterLink>
     <nav>
       <RouterLink to="/" class="nav-link"
         ><Icon name="grid" /><span>布料库</span></RouterLink

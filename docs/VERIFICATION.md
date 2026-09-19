@@ -12,10 +12,11 @@
 - 发布脚本隔离测试：摘要不符时不停止服务；候选 check 失败与启动后健康失败均保留旧程序、旧提交标记和数据库；正常分支更新程序和提交标记。使用模拟 systemctl/curl 的 Linux 非特权进程执行，未向正式服务注入失败。
 - 浏览器补充验证：服务器已提交但响应被截断时刷新页面，恢复草稿与原幂等键，查询后回到已创建记录；确认只生成一条记录。
 - GitHub Ubuntu runner 的 libvips 8.15 图片测试通过；使用 8.15 与 8.18 共用的 export-profile 参数。Vitest 仅收集 src 单元测试，Playwright 独立运行浏览器场景。
-- 完整 [GitHub CI 35428707962](https://github.com/Crashmere/FabricWorld/actions/runs/35428707962) 通过，包含 3 个 Chromium 流程；[生产发布 35428797360](https://github.com/Crashmere/FabricWorld/actions/runs/35428797360) 通过。运行提交为 `211b8f3b6bd9b0c817afe2698acb21776a5ff29c`；后续文档提交与运行版本分开记录。
+- 首版完整 [GitHub CI 35428707962](https://github.com/Crashmere/FabricWorld/actions/runs/35428707962) 通过，包含 3 个 Chromium 流程；[首版生产发布 35428797360](https://github.com/Crashmere/FabricWorld/actions/runs/35428797360) 通过。当前运行提交以服务器 current-commit 为准，文档提交另见 docs/SOURCE。
 - 正式服务与备份 timer 均启用，首份 daily 和发布前数据库/图片备份成功；受限发布账号不接受任意 shell 命令。生产健康接口正常，NRestarts=0。
 - Ledger、FeeTable、FabricWorld 的直连/反代健康、页面深链接与 JavaScript 资源均 HTTP 200；Nginx 配置校验通过，6 份安装配置与源码 SHA-256 一致。
 - 发布后公网只读浏览器验收：375×667 与 1440×900 的布料库、录入页均无横向溢出、无 JavaScript 异常；拍照 input 属性正确。生产未写入合成记录。
+- 布卷图标：已检查 16/32/48/64 px 的显示，320/375/1440 px 页头布局与子路径录入页资源加载正常；SVG、ICO 和 180 px Apple Touch PNG 均返回正确图片类型。图标生成脚本使用已有 libvips，不增加运行依赖。
 
 ## 实际限制与未完成验证
 
