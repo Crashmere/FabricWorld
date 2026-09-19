@@ -72,11 +72,13 @@ backup 输出目录必须不存在。锁冲突返回失败，检查日志后重�
 
 ## 隔离恢复与生产恢复
 
+先核对隔离端口 19082 空闲。18083 已分配给 RecipeBox，不能用作恢复演练监听。
+
 ```sh
 fabricworld restore --source /path/to/backup --out /path/to/new-restore-directory
 fabricworld migrate --data /path/to/new-restore-directory
 fabricworld check --data /path/to/new-restore-directory
-fabricworld serve --data /path/to/new-restore-directory --listen 127.0.0.1:18083 --with-prefix
+fabricworld serve --data /path/to/new-restore-directory --listen 127.0.0.1:19082 --with-prefix
 ```
 
 restore 验证清单、限制相对路径、复制为独立文件，拒绝已存在的目标。备份源和恢复目标上级目录都须对运行身份可访问。验证照片、封面、回收站、尺寸和记录。生产恢复先确认时点和数据损失，停服务，保留当前数据目录，恢复到独立目录并检查后切换，设置正确所有者，再启动。不能把程序回退当成数据库回退。
