@@ -48,7 +48,7 @@ Ledger 联动由独立 /api/integrations/ledger 接口接收交易 ID、标题�
 
 购买日期保留原生 date 控件；边框、内边距与焦点样式放在外层 date-input，内部 input 使用零边框、零内边距，避免 [WebKit 301648](https://bugs.webkit.org/show_bug.cgi?id=301648) 在 iOS 上把 padding 加到 100% 宽度。手机端日期与总价分别占一行，桌面并排。仅设置 max-width 或改为单列不能解决这个原生控件问题。
 
-网站使用森林绿底的布卷与织纹图标，页头与浏览器 SVG 图标共用 `web/public/fabricworld.svg`；ICO 提供 16/32/48 px，Apple Touch 图标为 180 px。修改 SVG 后运行 `npm --prefix web run icons`（使用现有 libvips）重新生成两份位图；资源路径使用 Vite BASE_URL，支持子路径及详情页刷新。
+网站使用森林绿底的叠放布样图标，以米白、鼠尾草绿和陶土色布片、锯齿裁边、缝线与织纹表达布料。页头与浏览器 SVG 图标共用 `web/public/fabricworld.svg`；ICO 提供 16/32/48 px，Apple Touch 图标为 180 px。修改 SVG 后运行 `npm --prefix web run icons`（使用现有 libvips）重新生成两份位图；资源路径使用 Vite BASE_URL，支持子路径及详情页刷新。`web/index.html` 和 `web/src/App.vue` 的图标 URL 共用 `v=swatches` 版本参数，改版时同步更新以刷新浏览器图标缓存。
 
 拍照 input 使用 capture=environment，相册多选分开。摄像头选择由手机系统决定；HTTP 下不使用 getUserMedia、Service Worker 或离线同步。上传以 XHR 显示进度，失败逐张重试；图片未完成需重试/移除后才能保存。
 

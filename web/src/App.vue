@@ -3,7 +3,7 @@ import { ref, nextTick, watch, onMounted, onUnmounted } from "vue";
 import { useRoute } from "vue-router";
 import { notice } from "./api";
 import Icon from "./components/Icon.vue";
-const brandIcon = import.meta.env.BASE_URL + "fabricworld.svg";
+const brandIcon = import.meta.env.BASE_URL + "fabricworld.svg?v=swatches";
 const offline = ref(!navigator.onLine);
 const update = () => (offline.value = !navigator.onLine);
 const route = useRoute();
