@@ -49,6 +49,7 @@ stopped=true
 systemctl stop fabricworld
 runuser -u fabricworld -- timeout 180 "$app/bin/fabricworld" backup --data "$app/data" --out "$backup"
 # Uploaded executable always runs as the application identity.
+runuser -u fabricworld -- timeout 30 "$release/fabricworld" migrate --data "$app/data"
 runuser -u fabricworld -- timeout 30 "$release/fabricworld" check --data "$app/data"
 install -m 0755 "$release/fabricworld" "$app/bin/fabricworld.next"
 replaced=true

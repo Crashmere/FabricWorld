@@ -26,7 +26,7 @@ CREATE TABLE media(id TEXT PRIMARY KEY,fabric_id TEXT REFERENCES fabrics(id) ON 
 CREATE INDEX media_fabric ON media(fabric_id);
 CREATE TABLE changes(fabric_id TEXT NOT NULL REFERENCES fabrics(id) ON DELETE CASCADE,revision INTEGER NOT NULL,body TEXT NOT NULL,PRIMARY KEY(fabric_id,revision));
 CREATE TABLE operations(key TEXT PRIMARY KEY,fingerprint TEXT NOT NULL,result TEXT NOT NULL,created_at TEXT NOT NULL);
-`
+` + materialCatalogSchema
 
 type Store struct {
 	DB          *sql.DB
@@ -431,6 +431,9 @@ func (s *Store) Suggestions(ctx context.Context) (map[string][]string, error) {
 		q := "SELECT DISTINCT json_extract(body,'$." + k + "') FROM fabrics WHERE deleted_at IS NULL ORDER BY 1 LIMIT 200"
 		if k == "materials" || k == "tags" {
 			q = "SELECT DISTINCT value FROM fabrics,json_each(fabrics.body,'$." + k + "') WHERE deleted_at IS NULL ORDER BY 1 LIMIT 200"
+		}
+		if k == "materials" {
+			q = "SELECT name FROM material_catalog UNION SELECT value FROM fabrics,json_each(fabrics.body,'$.materials') WHERE deleted_at IS NULL ORDER BY 1"
 		}
 		rows, e := s.DB.QueryContext(ctx, q)
 		if e != nil {

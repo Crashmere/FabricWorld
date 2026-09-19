@@ -47,12 +47,13 @@ if [[ $1 == backup ]]; then mkdir "$5"; printf backup > "$5/manifest.json"; fi
 SH
 cp "$release_test/previous" "$release_test/good"
 printf '\n# good candidate\n' >> "$release_test/good"
-printf '#!/usr/bin/env bash\nexit 1\n' > "$release_test/bad-check"
+printf '#!/usr/bin/env bash\n[[ $1 != check ]]\n' > "$release_test/bad-check"
+printf '#!/usr/bin/env bash\n[[ $1 != migrate ]]\n' > "$release_test/bad-migrate"
 cp "$release_test/good" "$release_test/unhealthy"
 printf '\n# unhealthy\n' >> "$release_test/unhealthy"
 commit=1111111111111111111111111111111111111111
 old_commit=2222222222222222222222222222222222222222
-for scenario in checksum bad-check unhealthy good; do
+for scenario in checksum bad-migrate bad-check unhealthy good; do
   export TEST_APP="$release_test/$scenario-app"
   mkdir -p "$TEST_APP/"{bin,data,backups,releases}
   cp "$release_test/previous" "$TEST_APP/bin/fabricworld"

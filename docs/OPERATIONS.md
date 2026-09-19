@@ -47,6 +47,8 @@ bin/fabricworld init --data .local/dev-data
 bin/fabricworld serve --data .local/dev-data --with-prefix
 ```
 
+升级已有本地数据目录前先备份，再执行 bin/fabricworld migrate --data .local/dev-data；缺少材质目录扩展时 check/serve 会拒绝启动，不能用 init 覆盖已有库。
+
 本地地址为 `http://127.0.0.1:18082/fabricworld/`。日常前端热更新可运行 web 的 npm run dev，API 代理到不带 --with-prefix 的本地后端。测试数据全部在 .local，Git 忽略。
 
 浏览器测试需要 Chromium（本地默认使用已安装 Chrome，可设 PW_CHANNEL=chromium）和 Playwright 官方 WebKit。只跑现有 Chrome 流程可用 `npm --prefix web run test:e2e -- --project=chromium`；完整检查还应运行 webkit-purchase 与 webkit-materials。测试浏览器可安装在项目忽略目录：
@@ -72,6 +74,7 @@ backup 输出目录必须不存在。锁冲突返回失败，检查日志后重�
 
 ```sh
 fabricworld restore --source /path/to/backup --out /path/to/new-restore-directory
+fabricworld migrate --data /path/to/new-restore-directory
 fabricworld check --data /path/to/new-restore-directory
 fabricworld serve --data /path/to/new-restore-directory --listen 127.0.0.1:18083 --with-prefix
 ```
@@ -105,7 +108,7 @@ Ledger 从本机 HTTP 调用 /api/integrations/ledger，默认目标 127.0.0.1:1
 
 材质百分比作为可选 JSON 字段存入现有 schema v1，无需表结构迁移。新版服务兼容旧客户端省略百分比字段的保存请求；旧版服务不认识该字段，回退后编辑记录会丢失其百分比，回退期间应暂停资料编辑并保留发布前备份。
 
-材质目录与批量移除复用当前布料 JSON、changes 和 operations，无新表或运行配置。移除也更新回收站记录，恢复布料不会重新带回已移除的材质。操作结果保留 7 天，遇到未知结果先用原键查询或重试；集合版本过期时重新核对当前目录。回退程序不会撤销已完成的批量移除，历史中保留修改前后快照。生产验收只读检查目录、页面及健康，批量写入回归使用隔离合成库。
+独立材质目录使用新增 material_catalog(name,id)，允许零使用名称并持久保存；布料计数仍从当前记录计算。迁移只创建这张兼容表，保留 user_version=1 和所有布料/照片数据。首次安装直接建表；旧库发布先用旧程序备份，候选程序 migrate 后再 check。管理员需从已推送提交更新 /opt/fabricworld/bin/deploy-release.sh，使其在候选 check 前执行 migrate；发布身份和权限不变。移除也更新回收站记录，恢复布料不会重新带回已移除的材质。操作结果保留 7 天，遇到未知结果先用原键查询或重试；集合版本过期时重新核对当前目录。前一版程序可读取扩展后的 v1 数据库，忽略独立目录表；回退期间不会展示零使用名称，但不会清除其持久数据。回退程序不会撤销已完成的批量移除，历史中保留修改前后快照。恢复升级前备份后需显式 migrate 才能启动新版。生产验收只读检查目录、页面及健康，批量写入回归使用隔离合成库。
 
 ## 文档同步
 

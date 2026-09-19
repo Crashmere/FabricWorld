@@ -23,7 +23,7 @@ func main() {
 }
 func run() error {
 	if len(os.Args) < 2 {
-		return fmt.Errorf("usage: fabricworld serve|init|check|backup|restore|cleanup|daily")
+		return fmt.Errorf("usage: fabricworld serve|init|migrate|check|backup|restore|cleanup|daily")
 	}
 	cmd := os.Args[1]
 	flags := flag.NewFlagSet(cmd, flag.ContinueOnError)
@@ -36,6 +36,9 @@ func run() error {
 		return e
 	}
 	ctx := context.Background()
+	if cmd == "migrate" {
+		return app.Migrate(ctx, *dir)
+	}
 	if cmd == "restore" {
 		return app.Restore(ctx, *source, *out)
 	}

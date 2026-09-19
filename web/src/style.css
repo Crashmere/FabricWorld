@@ -201,6 +201,9 @@ img {
 .material-info h2 { font-size: 16px; }
 .material-info p { margin-top: 5px; color: var(--muted); font-size: 12px; }
 .material-remove { flex-shrink: 0; padding: 9px 12px; font-size: 13px; }
+.material-empty { text-align: center; color: var(--muted); padding: 24px 0; }
+.button.material-add { margin-top: 20px; max-width: 100%; white-space: normal; }
+.material-add span { min-width: 0; overflow-wrap: anywhere; }
 .page {
   max-width: 1240px;
   margin: auto;

@@ -54,6 +54,17 @@ func copyFile(src, dst string) error {
 	return ce
 }
 func (s *Store) Check(ctx context.Context) error {
+	if e := s.checkIntegrity(ctx); e != nil {
+		return e
+	}
+	rows, e := s.DB.QueryContext(ctx, "SELECT name,id FROM material_catalog LIMIT 0")
+	if e != nil {
+		return fmt.Errorf("material catalog schema missing or incompatible; run migrate after backup: %w", e)
+	}
+	return rows.Close()
+}
+
+func (s *Store) checkIntegrity(ctx context.Context) error {
 	var result string
 	if e := s.DB.QueryRowContext(ctx, "PRAGMA integrity_check").Scan(&result); e != nil {
 		return e
@@ -203,7 +214,9 @@ func Restore(ctx context.Context, src, dst string) error {
 		return e
 	}
 	defer s.DB.Close()
-	return s.Check(ctx)
+	// Older v1 snapshots are valid restore sources. Schema extensions are
+	// applied explicitly with migrate after restoring, before starting serve.
+	return s.checkIntegrity(ctx)
 }
 func (s *Store) Cleanup(ctx context.Context) error {
 	unlock, e := s.Lock(true)

@@ -5,7 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"net/url"
+	"path/filepath"
 	"reflect"
+	"slices"
+	"strings"
 	"testing"
 )
 
@@ -120,6 +123,9 @@ func TestRemoveMaterialConflictAndRollback(t *testing.T) {
 	ctx := context.Background()
 	a := save(t, s, example())
 	b := save(t, s, example())
+	if _, e := s.AddMaterial(ctx, ID(), ID(), AddMaterialInput{Name: "棉"}); e != nil {
+		t.Fatal(e)
+	}
 	item := usage(t, s, "棉")
 	a.Notes = "并发编辑"
 	a = save(t, s, a)
@@ -143,5 +149,141 @@ WHEN json_extract(NEW.body,'$.action')='remove_material' BEGIN SELECT RAISE(ABOR
 		if e != nil || !reflect.DeepEqual(before, after) {
 			t.Fatal("batch removal was not atomic", e)
 		}
+	}
+	if usage(t, s, "棉").Version != item.Version {
+		t.Fatal("failed removal changed catalog entry")
+	}
+}
+
+func TestStandaloneMaterialLifecycle(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	in := AddMaterialInput{Name: "  新材质  "}
+	k := ID()
+	result, e := s.AddMaterial(ctx, k, "add", in)
+	if e != nil || string(result) != `{"name":"新材质"}` {
+		t.Fatal(string(result), e)
+	}
+	empty := usage(t, s, "新材质")
+	if empty.Count != 0 || empty.TrashCount != 0 {
+		t.Fatal(empty)
+	}
+	if _, e = s.AddMaterial(ctx, ID(), "duplicate", in); e != nil || usage(t, s, "新材质") != empty {
+		t.Fatal("duplicate changed material identity", e)
+	}
+	suggestions, e := s.Suggestions(ctx)
+	if e != nil || !slices.Contains(suggestions["materials"], "新材质") {
+		t.Fatal(suggestions, e)
+	}
+	f := example()
+	f.Materials = []string{"新材质", "麻"}
+	f = save(t, s, f)
+	if usage(t, s, "新材质").Count != 1 {
+		t.Fatal("catalog entry counted as a fabric")
+	}
+	if _, e = s.RemoveMaterial(ctx, ID(), ID(), RemoveMaterialInput{Name: empty.Name, Version: empty.Version}); e == nil {
+		t.Fatal("new usage did not invalidate empty catalog version")
+	}
+	f.Materials = []string{"麻"}
+	save(t, s, f)
+	if usage(t, s, "新材质").Count != 0 {
+		t.Fatal("standalone material did not survive losing its last usage")
+	}
+	removeKey := ID()
+	removeIn := RemoveMaterialInput{Name: empty.Name, Version: empty.Version}
+	if _, e = s.RemoveMaterial(ctx, removeKey, "remove", removeIn); e != nil {
+		t.Fatal(e)
+	}
+	// Replaying the original add must not resurrect a deliberately removed name.
+	if replayed, e := s.AddMaterial(ctx, k, "add", in); e != nil || !bytes.Equal(result, replayed) {
+		t.Fatal(e)
+	}
+	items, e := s.Materials(ctx)
+	if e != nil || slices.ContainsFunc(items, func(m MaterialUsage) bool { return m.Name == empty.Name }) {
+		t.Fatal("old add recreated removed material", e)
+	}
+	if _, e = s.AddMaterial(ctx, ID(), ID(), in); e != nil {
+		t.Fatal(e)
+	}
+	readded := usage(t, s, "新材质")
+	if readded.Version == empty.Version {
+		t.Fatal("re-add reused removed catalog identity")
+	}
+	if _, e = s.RemoveMaterial(ctx, removeKey, "remove", removeIn); e != nil || usage(t, s, "新材质") != readded {
+		t.Fatal("old remove changed re-added material", e)
+	}
+	if _, e = s.RemoveMaterial(ctx, ID(), ID(), removeIn); e == nil {
+		t.Fatal("stale empty catalog version accepted after re-add")
+	}
+	if _, e = s.AddMaterial(ctx, k, "different", AddMaterialInput{Name: "另一种"}); e == nil {
+		t.Fatal("reused operation key accepted")
+	}
+	for _, name := range []string{"  ", strings.Repeat("材", 41)} {
+		if _, e = s.AddMaterial(ctx, ID(), ID(), AddMaterialInput{Name: name}); e == nil {
+			t.Fatal("invalid name accepted")
+		}
+	}
+}
+
+func TestMaterialCatalogMigrationAndBackup(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+	f := save(t, s, example())
+	if _, e := s.DB.Exec("DROP TABLE material_catalog"); e != nil {
+		t.Fatal(e)
+	}
+	if e := s.Check(ctx); e == nil {
+		t.Fatal("legacy database should request explicit migration")
+	}
+	oldBackup, oldRestore := filepath.Join(t.TempDir(), "old-backup"), filepath.Join(t.TempDir(), "old-restore")
+	if e := s.Backup(ctx, oldBackup); e != nil {
+		t.Fatal(e)
+	}
+	if e := Restore(ctx, oldBackup, oldRestore); e != nil {
+		t.Fatal("cannot restore backup made before catalog migration", e)
+	}
+	if e := Migrate(ctx, oldRestore); e != nil {
+		t.Fatal(e)
+	}
+	for range 2 {
+		if e := Migrate(ctx, s.Dir); e != nil {
+			t.Fatal(e)
+		}
+	}
+	if e := s.Check(ctx); e != nil {
+		t.Fatal(e)
+	}
+	var version int
+	if e := s.DB.QueryRow("PRAGMA user_version").Scan(&version); e != nil || version != 1 {
+		t.Fatal("migration broke v1 compatibility", e)
+	}
+	after, e := s.Get(ctx, f.ID)
+	if e != nil || !reflect.DeepEqual(f, after) {
+		t.Fatal("migration changed existing fabric", e)
+	}
+	if _, e = s.AddMaterial(ctx, ID(), ID(), AddMaterialInput{Name: "零使用材质"}); e != nil {
+		t.Fatal(e)
+	}
+	empty := usage(t, s, "零使用材质")
+	if e = s.Cleanup(ctx); e != nil {
+		t.Fatal(e)
+	}
+	backup, restored := filepath.Join(t.TempDir(), "backup"), filepath.Join(t.TempDir(), "restored")
+	if e = s.Backup(ctx, backup); e != nil {
+		t.Fatal(e)
+	}
+	if e = Restore(ctx, backup, restored); e != nil {
+		t.Fatal(e)
+	}
+	r, e := Open(restored, false)
+	if e != nil {
+		t.Fatal(e)
+	}
+	defer r.DB.Close()
+	if usage(t, r, "零使用材质") != empty {
+		t.Fatal("backup lost standalone material identity")
+	}
+	if e = Migrate(ctx, filepath.Join(t.TempDir(), "missing")); e == nil {
+		t.Fatal("migration created missing database")
 	}
 }

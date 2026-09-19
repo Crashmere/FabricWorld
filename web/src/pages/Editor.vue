@@ -51,26 +51,29 @@ function previewPhoto(id: string, src: string, alt: string) {
   photoPreview.value = { id, src, alt };
 }
 const uploading = computed(() => pending.value.some((p) => p.active));
-function syncMaterialPercentages() {
+function syncMaterialPercentages(previousCount = f.value.materials.length) {
+  const leavingSingle = previousCount === 1 && f.value.materials.length > 1;
   f.value.materialPercentages = Object.fromEntries(f.value.materials.map(m =>
-    [m, f.value.materials.length === 1 ? "100" : f.value.materialPercentages?.[m] ?? ""],
+    [m, f.value.materials.length === 1 ? "100" : leavingSingle ? "" : f.value.materialPercentages?.[m] ?? ""],
   ));
 }
 const dirty = computed(
   () => initialized.value && JSON.stringify(f.value) !== initial,
 );
 function toggleMaterial(m: string) {
+  const previousCount = f.value.materials.length;
   const i = f.value.materials.indexOf(m);
   if (i >= 0) f.value.materials.splice(i, 1);
   else if (f.value.materials.length < 20) f.value.materials.push(m);
-  syncMaterialPercentages();
+  syncMaterialPercentages(previousCount);
 }
 function addMaterial() {
+  const previousCount = f.value.materials.length;
   const m = customMaterial.value.trim();
   if (m && !f.value.materials.includes(m) && f.value.materials.length < 20)
     f.value.materials.push(m);
   customMaterial.value = "";
-  syncMaterialPercentages();
+  syncMaterialPercentages(previousCount);
 }
 async function processQueue() {
   if (uploading.value) return;
