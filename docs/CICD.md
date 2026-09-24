@@ -13,3 +13,5 @@ setup-ci.sh 接受一份 Ed25519 公钥，拒绝已有身份；私钥只进入 G
 `bash deploy/test-release.sh` 在 Linux 临时目录使用模拟服务检查上述失败分支与成功分支；实际发布脚本保留固定路径和 root 检查。CI 与发布工作流都运行此测试，包含 migrate 失败分支，不在正式实例上制造故障。发布脚本由 root 管理，修改后需从已提交来源同步到 /opt/fabricworld/bin/deploy-release.sh；普通二进制发布不覆盖它。
 
 每次发布保留 releases/ 中的候选、previous、metadata、result，成功后更新 current-commit。历史和 before-deploy 备份暂由运维定期清理（先明确保留点）；daily 自动保留 14 份。首次安装由管理员使用 install.sh，后续手动发布通过 CI 入口验证。
+
+Deploy FabricWorld 的 SSH 步骤以 exit code 124 结束、最新发布目录为 failed 且没有 metadata，是 GitHub runner 到服务器的上传超时。不要反复重跑，直接按共享的 [GitHub 上传过慢时的备用发布](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#github-上传过慢时的备用发布)处理（服务器副本 `/opt/server-context/references/common-issues.md`），其中也包括残留清理。FabricWorld 的参数：发布工作流不上传产物，改用同一提交成功的 Build and verify run 的 artifact `fabricworld-linux`（文件 `fabricworld-linux-amd64`），验收 `/fabricworld/healthz` 与 `/fabricworld/new`，不写测试数据。
