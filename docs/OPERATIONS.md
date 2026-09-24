@@ -60,7 +60,7 @@ PLAYWRIGHT_BROWSERS_PATH="$PWD/.local/playwright" npm --prefix web run test:e2e
 
 ## 备份
 
-每天北京时间 03:30 加 0–5 分钟随机延迟，保留 14 份 daily。**当前定时备份自 2026-09-20 起失败**（`invalid cross-device link`），原因与修复见共享的 [systemd 沙箱下照片硬链接备份失败](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#systemd-沙箱下照片硬链接备份失败)，修复后删除本句。任务先清理过期回收站/暂存/操作结果，再生成一致性快照和图片硬链接；文件清单含 SHA-256。不要编辑或覆盖快照里的图片，它们与正式不可变图片共享 inode。只有完整备份才有 manifest.json。
+每天北京时间 03:30 加 0–5 分钟随机延迟，保留 14 份 daily。备份 unit 的可写目录必须是整个 /opt/fabricworld，原因见共享的 [systemd 沙箱下照片硬链接备份失败](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#systemd-沙箱下照片硬链接备份失败)。任务先清理过期回收站/暂存/操作结果，再生成一致性快照和图片硬链接；文件清单含 SHA-256。不要编辑或覆盖快照里的图片，它们与正式不可变图片共享 inode。只有完整备份才有 manifest.json。
 
 ```sh
 systemctl status fabricworld-backup.timer
