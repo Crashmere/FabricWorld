@@ -8,5 +8,6 @@
 - 写入必须支持幂等和版本冲突。测试使用隔离合成数据，生产默认只读验收。
 - 修改后运行 Go 测试、go vet、前端类型检查/构建；界面实测窄屏（375×667 和 320 px）与桌面。真实手机相机未验证时必须如实记录。
 - 部署先使用 server-operations，显式读取 ssh ali 'cat /opt/AGENTS.md'。本项目仅维护自己的 location、unit、数据和发布身份。
-- 更新对应 docs/deploy，新增共享状态同步到 agent-config；服务器文档来自已提交的白名单文件。
+- 更新对应 docs/deploy，新增共享状态同步到 agent-config；推送后运行 agent-config 的 `skills/server-operations/scripts/sync-docs.sh FabricWorld` 同步服务器副本。
+- 哪些事直接做完再告知、哪些先确认，只看 server-operations SKILL.md 的授权表；文档维护与同步不需要事先确认。
 - GitHub 仓库 public。生产地址、照片、数据库、备份、凭据不能入 Git。推送 main 运行 CI，生产发布为单独手动工作流。

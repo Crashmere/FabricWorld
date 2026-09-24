@@ -114,4 +114,4 @@ Ledger 从本机 HTTP 调用 /api/integrations/ledger，默认目标 127.0.0.1:1
 
 ## 文档同步
 
-从已推送提交通过 git archive 导出 AGENTS.md 和受跟踪 docs/*.md 白名单，管理员同步到 /opt/fabricworld，最后写 docs/SOURCE（repository、commit、subdirectory、synced_at）。比较 SHA-256；不上传整个工作目录或 .local。共享清单单独维护在 agent-config/server-operations，按其 maintenance 同步 /opt/server-context 与 /opt/AGENTS.md。
+文档提交推送后运行 `~/agent-config/skills/server-operations/scripts/sync-docs.sh FabricWorld`，它负责漂移检查、安装到 /opt/fabricworld、逐文件校验、docs/SOURCE 和清理（用法见 server-operations 的 maintenance）。共享清单改动后不带参数运行同一脚本，同时同步 /opt/server-context 与 /opt/AGENTS.md。
