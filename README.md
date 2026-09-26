@@ -6,7 +6,7 @@
 - JPEG/PNG/WebP/HEIC 照片、封面排序、尺寸与多组余料、材质标签和搜索筛选。
 - 修改历史、30 天回收站、CSV 与带照片 ZIP 导出。
 - Vue 3 + TypeScript + Go + SQLite + libvips；独立 systemd 服务与 Nginx 子路径。
-- 数据库与照片一致性备份，GitHub Actions 检查，独立手动发布。
+- 数据库与照片一致性备份，GitHub Actions 检查，推送 main 后自动发布。
 
 源码：[Crashmere/FabricWorld](https://github.com/Crashmere/FabricWorld)（public）。
 
