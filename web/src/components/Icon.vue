@@ -2,6 +2,7 @@
 defineProps<{ name: string; size?: number }>();
 const paths: Record<string, string> = {
   plus: "M12 5v14M5 12h14",
+  minus: "M5 12h14",
   search: "m21 21-4.5-4.5M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0",
   filter: "M4 7h16M7 12h10M10 17h4",
   close: "m6 6 12 12M18 6 6 18",

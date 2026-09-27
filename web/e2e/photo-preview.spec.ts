@@ -32,10 +32,13 @@ for (const width of [320, 375, 1440]) {
     await expect(modal).toBeVisible();
     await expect(image).toHaveAttribute("src", /^blob:/);
     await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    await modal.getByRole("button", { name: "放大图片", exact: true }).click();
+    await expect(modal.getByLabel("图片缩放比例", { exact: true })).toHaveText("150%");
     release();
     await expect(page.getByText("1 / 10", { exact: true })).toBeVisible();
     await expect(image).toHaveAttribute("src", /\/media\/[a-f0-9]{32}\/main$/);
     await expect.poll(() => image.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    await expect(modal.getByLabel("图片缩放比例", { exact: true })).toHaveText("100%");
     const bounds = await image.evaluate(img => {
       const rect = img.getBoundingClientRect();
       return rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight;
@@ -52,7 +55,8 @@ for (const width of [320, 375, 1440]) {
     await expect(modal).toHaveCount(0);
     await expect(trigger).toBeFocused();
     await trigger.click();
-    await page.locator(".modal-scrim").click({ position: { x: 2, y: 2 } });
+    if (width === 1440) await page.locator(".modal-scrim").click({ position: { x: 2, y: 2 } });
+    else await modal.getByRole("button", { name: "关闭", exact: true }).click();
     await expect(modal).toHaveCount(0);
     expect(writes).toEqual([]);
     await page.getByRole("button", { name: "保存布料", exact: true }).click();

@@ -12,7 +12,7 @@ import {
 } from "../types";
 import Icon from "../components/Icon.vue";
 import PieceFields from "../components/PieceFields.vue";
-import Modal from "../components/Modal.vue";
+import PhotoViewer from "../components/PhotoViewer.vue";
 const route = useRoute(),
   router = useRouter(),
   editing = Boolean(route.params.id);
@@ -44,9 +44,8 @@ const pending = ref<Pending[]>([]),
   camera = ref<HTMLInputElement>(),
   album = ref<HTMLInputElement>();
 const photoPreview = ref<{ id: string; src: string; alt: string } | null>(null);
-const previewFailed = ref(false);
-watch(() => photoPreview.value?.src, () => { previewFailed.value = false; });
-function previewPhoto(id: string, src: string, alt: string) {
+function previewPhoto(id: string, src: string, alt: string, event?: MouseEvent) {
+  (event?.currentTarget as HTMLElement | null)?.focus({ preventScroll: true });
   photoPreview.value = { id, src, alt };
 }
 const uploading = computed(() => pending.value.some((p) => p.active));
@@ -379,7 +378,7 @@ onUnmounted(() => {
             <div v-for="(p, i) in f.photos" :key="p.id" class="edit-photo">
               <button type="button" class="photo-preview-trigger"
                 :aria-label="'查看照片 ' + (i + 1) + ' 大图'"
-                @click="previewPhoto(p.id, mediaURL(p.id, 'main'), '布料照片 ' + (i + 1))">
+                @click="previewPhoto(p.id, mediaURL(p.id, 'main'), '布料照片 ' + (i + 1), $event)">
                 <img :src="mediaURL(p.id)" :alt="'布料照片 ' + (i + 1)" />
               </button><span
                 v-if="i === 0"
@@ -418,7 +417,7 @@ onUnmounted(() => {
             >
               <button type="button" class="photo-preview-trigger"
                 :aria-label="'查看待上传照片 ' + p.file.name + ' 大图'"
-                @click="previewPhoto(p.localId, p.preview, p.file.name)">
+                @click="previewPhoto(p.localId, p.preview, p.file.name, $event)">
                 <img
                   :src="p.preview"
                   alt="待上传照片"
@@ -662,14 +661,6 @@ onUnmounted(() => {
         }}
       </button>
     </div>
-    <Modal v-if="photoPreview" title="照片预览" wide @close="photoPreview = null">
-      <p v-if="previewFailed" class="photo-preview-error" role="status">
-        {{ photoPreview.src.startsWith('blob:')
-          ? '这张照片暂时无法预览，上传完成后可查看大图。'
-          : '照片加载失败，请关闭后重新打开。' }}
-      </p>
-      <img v-else :key="photoPreview.src" class="lightbox-image"
-        :src="photoPreview.src" :alt="photoPreview.alt" @error="previewFailed = true" />
-    </Modal>
+    <PhotoViewer v-if="photoPreview" :src="photoPreview.src" :alt="photoPreview.alt" @close="photoPreview = null" />
   </div>
 </template>

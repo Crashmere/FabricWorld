@@ -26,6 +26,11 @@ export default defineConfig({
       testMatch: ["**/materials.spec.ts", "**/material-menu.spec.ts"],
       use: { ...devices["iPhone 13"], browserName: "webkit" },
     },
+    {
+      name: "webkit-photos",
+      testMatch: ["**/photo-preview.spec.ts", "**/photo-viewer.spec.ts"],
+      use: { ...devices["iPhone 13"], browserName: "webkit" },
+    },
   ],
   reporter: "list",
 });

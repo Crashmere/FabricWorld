@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 import Icon from "./Icon.vue";
-defineProps<{ title: string; wide?: boolean }>();
+defineProps<{ title: string; photo?: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 const box = ref<HTMLElement>();
 let previous: Element | null;
@@ -9,9 +9,9 @@ let scroll = 0;
 function keys(e: KeyboardEvent) {
   if (e.key === "Escape") emit("close");
   if (e.key === "Tab") {
-    const elements = box.value?.querySelectorAll<HTMLElement>(
+    const elements = Array.from(box.value?.querySelectorAll<HTMLElement>(
       'button,a,input,select,textarea,[tabindex="0"]',
-    );
+    ) || []).filter(element => !element.matches(':disabled,[tabindex="-1"]') && element.getClientRects().length);
     if (!elements?.length) return;
     const first = elements[0],
       last = elements[elements.length - 1];
@@ -44,11 +44,11 @@ onUnmounted(() => {
 </script>
 <template>
   <Teleport to="body"
-    ><div class="modal-scrim" @click.self="emit('close')">
+    ><div class="modal-scrim" :class="{ 'photo-scrim': photo }" @click.self="emit('close')">
       <section
         ref="box"
         class="modal"
-        :class="{ 'modal-wide': wide }"
+        :class="{ 'modal-photo': photo }"
         role="dialog"
         aria-modal="true"
         :aria-label="title"

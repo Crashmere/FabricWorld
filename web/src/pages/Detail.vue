@@ -12,6 +12,7 @@ import {
 } from "../types";
 import Icon from "../components/Icon.vue";
 import Modal from "../components/Modal.vue";
+import PhotoViewer from "../components/PhotoViewer.vue";
 const route = useRoute(),
   router = useRouter(),
   fabric = ref<Fabric>(),
@@ -23,6 +24,10 @@ const route = useRoute(),
   confirmDelete = ref(false),
   history = ref<Change[]>([]),
   showHistory = ref(false);
+function openPhoto(event: MouseEvent) {
+  (event.currentTarget as HTMLElement).focus({ preventScroll: true });
+  lightbox.value = true;
+}
 async function load() {
   loading.value = true;
   try {
@@ -106,7 +111,7 @@ onMounted(load);
           <button
             v-if="fabric.photos[selected] && !fabric.deletedAt"
             class="main-photo"
-            @click="lightbox = true"
+            @click="openPhoto"
             aria-label="查看照片大图"
           >
             <img
@@ -291,12 +296,9 @@ onMounted(load);
             </button>
           </div>
         </div></Modal
-      ><Modal v-if="lightbox" :title="fabric.name" @close="lightbox = false"
-        ><img
-          class="lightbox-image"
-          :src="mediaURL(fabric.photos[selected]!.id, 'main')"
-          :alt="fabric.name" />
-        <div class="lightbox-nav">
+      ><PhotoViewer v-if="lightbox" :title="fabric.name" :src="mediaURL(fabric.photos[selected]!.id, 'main')"
+        :alt="fabric.name" @close="lightbox = false">
+        <template v-if="fabric.photos.length > 1" #navigation>
           <button
             class="icon-button"
             :disabled="selected === 0"
@@ -312,7 +314,8 @@ onMounted(load);
             @click="selected++"
           >
             <Icon name="chevron" />
-          </button></div></Modal
-    ></template>
+          </button>
+        </template>
+      </PhotoViewer></template>
   </div>
 </template>

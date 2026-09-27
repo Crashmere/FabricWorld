@@ -51,7 +51,7 @@ bin/fabricworld serve --data .local/dev-data --with-prefix
 
 本地地址为 `http://127.0.0.1:18082/fabricworld/`。日常前端热更新可运行 web 的 npm run dev，API 代理到不带 --with-prefix 的本地后端。测试数据全部在 .local，Git 忽略。
 
-浏览器测试需要 Chromium（本地默认使用已安装 Chrome，可设 PW_CHANNEL=chromium）和 Playwright 官方 WebKit。只跑现有 Chrome 流程可用 `npm --prefix web run test:e2e -- --project=chromium`；完整检查还应运行 webkit-purchase 与 webkit-materials。测试浏览器可安装在项目忽略目录：
+浏览器测试需要 Chromium（本地默认使用已安装 Chrome，可设 PW_CHANNEL=chromium）和 Playwright 官方 WebKit。只跑现有 Chrome 流程可用 `npm --prefix web run test:e2e -- --project=chromium`；完整检查还应运行 webkit-purchase、webkit-materials 与 webkit-photos。测试浏览器可安装在项目忽略目录：
 
 ```sh
 PLAYWRIGHT_BROWSERS_PATH="$PWD/.local/playwright" node web/node_modules/playwright/cli.js install webkit

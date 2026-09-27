@@ -1,8 +1,10 @@
 # 检查与发布
 
-仓库为 public。推送 main / PR 运行 CI and deploy：verify 作业安装官方 libvips/HEIC 解码器，前端构建，Go race 测试与 vet、前端单测、shell 语法、隔离 Chromium 业务流程及 WebKit 购买日期、材质和菜单回归，再构建 Linux amd64 产物。main 推送（或在 main 上手动运行）时，deploy 作业在检查通过后下载同一产物发布到生产，发送前核对当前 main 提交，已有更新提交时跳过这次发布。纯文档提交加 `[skip ci]`。
+仓库为 public。推送 main / PR 运行 CI and deploy：verify 作业安装官方 libvips/HEIC 解码器，前端构建，Go race 测试与 vet、前端单测、shell 语法、隔离 Chromium 业务流程及 WebKit 购买日期、材质、菜单和图片预览回归，再构建 Linux amd64 产物。main 推送（或在 main 上手动运行）时，deploy 作业在检查通过后下载同一产物发布到生产，发送前核对当前 main 提交，已有更新提交时跳过这次发布。纯文档提交加 `[skip ci]`。
 
 Playwright 的 chromium 项目运行全部流程；webkit-purchase 使用 iPhone 视口运行 purchase.spec.ts，webkit-materials 运行 materials.spec.ts 与 material-menu.spec.ts。WebKit 自动化仍是桌面构建，不等同真实 iOS。日期回归额外模拟 padding 被加到百分比宽度的盒模型，以覆盖 WebKit 301648 对应的布局风险。菜单和材质管理回归覆盖 320/375/1440 px、管理页独立添加/复用/移除材质、批量移除、版本冲突以及提交响应丢失后的刷新恢复；新增和复制布料保存后返回主页，编辑后返回详情，新增结果查询后的主页跳转由 fabric.spec.ts 覆盖。
+
+webkit-photos 运行 photo-preview.spec.ts 与 photo-viewer.spec.ts，覆盖 320/375/1440 px 的本地/已上传照片预览、图片缩放、拖动、复位、切图和焦点。原生双指注入通过 Chromium CDP 验证图片变大且 visualViewport.scale 不变；WebKit 跳过这项 CDP 专用用例，仍运行按钮、鼠标及键盘交互。
 
 production 环境 secrets：SSH_HOST、SSH_USER、SSH_PRIVATE_KEY、SSH_KNOWN_HOSTS。通过已受信连接核实主机公钥；不关闭严格主机校验。部署账号 fabricworld-deploy 的 authorized_keys 使用 restrict 和强制命令，只有 `deploy <commit> <sha256>`，没有 shell/SCP/端口转发。root 管理强制命令、发布脚本和 sudoers。
 
