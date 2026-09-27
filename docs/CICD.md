@@ -4,6 +4,8 @@
 
 Playwright 的 chromium 项目运行全部流程；webkit-purchase 使用 iPhone 视口运行 purchase.spec.ts，webkit-materials 运行 materials.spec.ts 与 material-menu.spec.ts。WebKit 自动化仍是桌面构建，不等同真实 iOS。日期回归额外模拟 padding 被加到百分比宽度的盒模型，以覆盖 WebKit 301648 对应的布局风险。菜单和材质管理回归覆盖 320/375/1440 px、管理页独立添加/复用/移除材质、批量移除、版本冲突以及提交响应丢失后的刷新恢复；新增和复制布料保存后返回主页，编辑后返回详情，新增结果查询后的主页跳转由 fabric.spec.ts 覆盖。
 
+webkit-controls 运行 controls.spec.ts，覆盖顶栏唯一的成品集切换、全部自绘下拉、弹窗焦点与 Escape 边界、长选项、单位换算和状态取消、自由输入建议、减少动态效果，以及 320/375/1440 px 布局。
+
 webkit-photos 运行 photo-preview.spec.ts 与 photo-viewer.spec.ts，覆盖 320/375/1440 px 的本地/已上传照片预览、图片缩放、拖动、复位、切图和焦点。原生双指注入通过 Chromium CDP 验证图片变大且 visualViewport.scale 不变；WebKit 跳过这项 CDP 专用用例，仍运行按钮、鼠标及键盘交互。
 
 成品模块增加 webkit-works，运行 works.spec.ts，覆盖成品照片、布料关联、草稿和并发修改、提交恢复、导出与回收站，以及 320/375/1440 px 长文本布局。涉及生产数据库结构的迁移需依 server-operations 授权表获准后才合入 main；发布顺序和兼容保护见 [WORKS.md](WORKS.md)。

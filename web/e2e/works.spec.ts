@@ -76,7 +76,8 @@ test("record photos, fabric links, details, search, export and recover a finishe
   await page.getByLabel("搜索成品", { exact: true }).fill(name);
   await page.getByRole("button", { name: "搜索", exact: true }).click();
   await expect(page.locator(".work-card")).toHaveCount(1);
-  await page.getByLabel("成品类别筛选").selectOption("上衣");
+  await page.getByRole("combobox", { name: "成品类别筛选", exact: true }).click();
+  await page.getByRole("option", { name: "上衣", exact: true }).click();
   for (const width of [320, 375, 1440]) {
     await page.setViewportSize({ width, height: width === 1440 ? 900 : 667 }); await fits(page);
     await page.screenshot({ path: `../.local/works-library-${info.project.name}-${width}.png`, fullPage: true });

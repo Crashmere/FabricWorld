@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import { base, mediaURL, request } from "../api";
 import type { WorkList } from "../works";
 import Icon from "../components/Icon.vue";
+import ChoiceField from "../components/ChoiceField.vue";
 const route = useRoute(), router = useRouter();
 const trash = computed(() => route.path === "/works/trash");
 const data = ref<WorkList>({ items: [], total: 0, offset: 0, categories: [] });
@@ -44,8 +45,8 @@ watch(() => route.fullPath, () => { search.value = String(route.query.q || ""); 
     <section class="collection-controls">
       <form class="search-box" @submit.prevent="query({ q: search })"><Icon name="search" /><input v-model="search" aria-label="搜索成品" placeholder="搜索成品、纸样、布料、心得…" /><button v-if="search" type="button" class="icon-button" aria-label="清除搜索" @click="search = ''; query({q: ''})"><Icon name="close" :size="17" /></button><button class="search-submit" type="submit">搜索</button></form>
       <div class="work-filters">
-        <label><span class="sr-only">成品类别筛选</span><select :value="route.query.category || ''" @change="query({category: ($event.target as HTMLSelectElement).value})"><option value="">全部类别</option><option v-for="category in [...new Set([...data.categories, String(route.query.category || '')])].filter(Boolean)" :key="category">{{ category }}</option></select></label>
-        <label><span class="sr-only">成品排序</span><select :value="route.query.sort || 'completed'" @change="query({sort: ($event.target as HTMLSelectElement).value})"><option value="completed">最近完成</option><option value="updated">最近修改</option><option value="name">名称排序</option></select></label>
+        <label><span class="sr-only">成品类别筛选</span><ChoiceField label="成品类别筛选" :model-value="String(route.query.category || '')" :options="[{ value: '', label: '全部类别' }, ...[...new Set([...data.categories, String(route.query.category || '')])].filter(Boolean)]" @update:model-value="query({ category: $event })" /></label>
+        <label><span class="sr-only">成品排序</span><ChoiceField label="成品排序" :model-value="String(route.query.sort || 'completed')" :options="[{ value: 'completed', label: '最近完成' }, { value: 'updated', label: '最近修改' }, { value: 'name', label: '名称排序' }]" @update:model-value="query({ sort: $event })" /></label>
       </div>
     </section>
     <div v-if="route.query.fabric" class="info-banner">正在查看使用指定布料的成品。<button @click="query({fabric: ''})">查看全部</button></div>

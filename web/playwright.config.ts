@@ -10,6 +10,11 @@ export default defineConfig({
   },
   projects: [
     {
+      name: "webkit-controls",
+      testMatch: "**/controls.spec.ts",
+      use: { ...devices["iPhone 13"], browserName: "webkit" },
+    },
+    {
       name: "chromium",
       use: {
         browserName: "chromium",

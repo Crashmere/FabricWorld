@@ -5,6 +5,7 @@ import { base, request, write, key, toast, mediaURL } from "../api";
 import { dimensions, materialText, statuses, type Fabric, type FabricList } from "../types";
 import Icon from "../components/Icon.vue";
 import Modal from "../components/Modal.vue";
+import ChoiceField from "../components/ChoiceField.vue";
 const route = useRoute(),
   router = useRouter();
 const trash = computed(() => route.path === "/trash");
@@ -217,16 +218,9 @@ onMounted(async () => {
         <span v-else>{{ data.total }} 条记录</span
         ><label class="sort-select"
           ><span class="sr-only">排序</span
-          ><select
-            :value="route.query.sort || 'purchase'"
-            @change="
-              query({ sort: ($event.target as HTMLSelectElement).value })
-            "
-          >
-            <option value="purchase">最近购入</option>
-            <option value="updated">最近修改</option>
-            <option value="name">名称排序</option>
-          </select></label
+          ><ChoiceField label="排序" :model-value="String(route.query.sort || 'purchase')"
+            :options="[{ value: 'purchase', label: '最近购入' }, { value: 'updated', label: '最近修改' }, { value: 'name', label: '名称排序' }]"
+            @update:model-value="query({ sort: $event })" /></label
         >
       </div>
     </section>
@@ -359,27 +353,15 @@ onMounted(async () => {
     <Modal v-if="filterOpen" title="筛选布料" @close="filterOpen = false"
       ><div class="filter-form">
         <label
-          >材质<select v-model="filters.material">
-            <option value="">全部材质</option>
-            <option v-for="m in suggestions.materials" :key="m">{{ m }}</option>
-          </select></label
+          >材质<ChoiceField v-model="filters.material" label="材质" :options="[{ value: '', label: '全部材质' }, ...(suggestions.materials || [])]" /></label
         ><label
-          >收纳位置<select v-model="filters.location">
-            <option value="">全部位置</option>
-            <option v-for="m in suggestions.location" :key="m">{{ m }}</option>
-          </select></label
+          >收纳位置<ChoiceField v-model="filters.location" label="收纳位置" :options="[{ value: '', label: '全部位置' }, ...(suggestions.location || [])]" /></label
         >
         <div class="field-row">
           <label
-            >颜色<select v-model="filters.color">
-              <option value="">全部颜色</option>
-              <option v-for="m in suggestions.color" :key="m">{{ m }}</option>
-            </select></label
+            >颜色<ChoiceField v-model="filters.color" label="颜色" :options="[{ value: '', label: '全部颜色' }, ...(suggestions.color || [])]" /></label
           ><label
-            >标签<select v-model="filters.tag">
-              <option value="">全部标签</option>
-              <option v-for="m in suggestions.tags" :key="m">{{ m }}</option>
-            </select></label
+            >标签<ChoiceField v-model="filters.tag" label="标签" :options="[{ value: '', label: '全部标签' }, ...(suggestions.tags || [])]" /></label
           >
         </div>
         <div class="field-row">

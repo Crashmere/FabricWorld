@@ -409,15 +409,6 @@ img {
   background: var(--green);
   border-radius: 3px;
 }
-.sort-select select {
-  font-size: 12px;
-  background: transparent;
-  border: 0;
-  padding: 9px 22px 9px 5px;
-  color: #808977;
-  margin: 0;
-  min-height: 44px;
-}
 .fabric-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -972,9 +963,6 @@ img {
 .dimensions-row input {
   padding: 11px 10px;
 }
-.dimensions-row select {
-  padding: 11px 5px;
-}
 .piece-bottom {
   display: flex;
   align-items: center;
@@ -1238,7 +1226,7 @@ details[open] > summary > svg {
   padding-right: max(20px, calc((100vw - 680px) / 2));
 }
 .remnant-page input,
-.remnant-page select {
+.remnant-page .choice-trigger {
   scroll-margin-bottom: 110px;
   scroll-margin-top: 20px;
 }
@@ -1806,12 +1794,6 @@ details[open] > summary > svg {
     margin-left: auto;
     margin-top: 5px;
     margin-bottom: 8px;
-  }
-  .sort-select select {
-    font-size: 11px;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    min-height: 38px;
   }
   .fabric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

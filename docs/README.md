@@ -4,6 +4,7 @@
 | --- | --- |
 | 架构、数据与图片生命周期 | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | 缝纫成品模块设计与上线步骤 | [WORKS.md](WORKS.md) |
+| 自绘选择控件与顶栏导航 | [CONTROLS.md](CONTROLS.md) |
 | HTTP 接口与错误 | [API.md](API.md) |
 | 安装、备份、恢复与诊断 | [OPERATIONS.md](OPERATIONS.md) |
 | 自动检查、发布与回退 | [CICD.md](CICD.md) |

@@ -13,6 +13,7 @@ import {
 import Icon from "../components/Icon.vue";
 import PieceFields from "../components/PieceFields.vue";
 import PhotoViewer from "../components/PhotoViewer.vue";
+import ChoiceField from "../components/ChoiceField.vue";
 const route = useRoute(),
   router = useRouter(),
   editing = Boolean(route.params.id);
@@ -137,14 +138,13 @@ function removePhoto(id: string) {
   f.value.photos = f.value.photos.filter((p) => p.id !== id);
   f.value.photoIds = f.value.photos.map((p) => p.id);
 }
-function changeStatus(e: Event) {
-  const status = (e.target as HTMLSelectElement).value as Fabric["status"];
+function changeStatus(value: string) {
+  const status = value as Fabric["status"];
   if (
     status === "used" &&
     f.value.pieces.length &&
     !window.confirm("标记已用完后，当前剩余尺寸会归零，修改历史仍会保留。")
   ) {
-    (e.target as HTMLSelectElement).value = f.value.status;
     return;
   }
   f.value.status = status;
@@ -533,17 +533,8 @@ onUnmounted(() => {
               placeholder="例如：表层棉麻，背面有涂层" /></label
           ><label
             >收纳位置 <span class="optional">选填</span
-            ><input
-              v-model="f.location"
-              list="locations"
-              maxlength="160"
-              placeholder="例如：衣柜上层 · 2 号箱" /><datalist id="locations">
-              <option
-                v-for="item in suggestions.location"
-                :key="item"
-                :value="item"
-              /></datalist
-          ></label>
+            ><ChoiceField v-model="f.location" label="收纳位置" editable :options="suggestions.location || []"
+              :maxlength="160" placeholder="例如：衣柜上层 · 2 号箱" /></label>
         </section>
         <section class="form-panel">
           <details
@@ -561,15 +552,7 @@ onUnmounted(() => {
                 补测或更正录入信息时在这里修改；使用后记录剩余布片，请从详情页选择“更新余料”。
               </p>
               <label
-                >当前状态<select :value="f.status" @change="changeStatus">
-                  <option
-                    v-for="(label, value) in statuses"
-                    :key="value"
-                    :value="value"
-                  >
-                    {{ label }}
-                  </option>
-                </select></label
+                >当前状态<ChoiceField :model-value="f.status" label="当前状态" :options="Object.entries(statuses).map(([value, label]) => ({ value, label }))" @update:model-value="changeStatus" /></label
               >
               <p v-if="f.status === 'used'" class="field-hint">
                 已用完，没有剩余布片。以前的尺寸保留在修改历史中。

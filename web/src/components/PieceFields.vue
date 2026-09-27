@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { newPiece, type Piece } from "../types";
 import Icon from "./Icon.vue";
+import ChoiceField from "./ChoiceField.vue";
 const pieces = defineModel<Piece[]>({ required: true });
-function changeUnit(p: Piece, e: Event) {
-  const next = (e.target as HTMLSelectElement).value as "m" | "cm";
+function changeUnit(p: Piece, value: string) {
+  const next = value as "m" | "cm";
   if (next === p.unit) return;
   for (const field of ["width", "length"] as const) {
     const raw = p[field];
@@ -50,14 +51,7 @@ function changeUnit(p: Piece, e: Event) {
           :aria-label="'布片 ' + (i + 1) + ' 长度'"
       /></label>
       <label class="unit-field"
-        >单位<select
-          :value="p.unit"
-          :aria-label="'布片 ' + (i + 1) + ' 单位'"
-          @change="changeUnit(p, $event)"
-        >
-          <option value="cm">cm</option>
-          <option value="m">m</option>
-        </select></label
+        >单位<ChoiceField :model-value="p.unit" :label="'布片 ' + (i + 1) + ' 单位'" :options="['cm', 'm']" @update:model-value="changeUnit(p, $event)" /></label
       >
     </div>
     <div class="piece-bottom">

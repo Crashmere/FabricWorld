@@ -81,13 +81,15 @@ test("header menu and material removal preserve fabrics and recover interrupted 
   await page.goto("./");
   const menuButton = page.getByRole("button", { name: "打开菜单", exact: true });
   const menu = page.getByRole("navigation", { name: "网站菜单", exact: true });
-  await expect(page.locator(".site-header").getByRole("link", { name: "布料库", exact: true })).toHaveCount(0);
+  await expect(page.locator(".site-header").getByRole("link", { name: "布料库", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "成品集", exact: true })).toHaveCount(1);
   for (const width of [320, 375, 1440]) {
     await page.setViewportSize({ width, height: width === 1440 ? 900 : 667 });
     await menuButton.click();
     await expect(menuButton).toHaveAttribute("aria-expanded", "true");
     await expect(menu.getByRole("link", { name: "回收站", exact: true })).toBeVisible();
     await expect(menu.getByRole("link", { name: "材质管理", exact: true })).toBeVisible();
+    await expect(menu.getByRole("link", { name: "成品集", exact: true })).toHaveCount(0);
     expect(await menu.evaluate(element => { const box = element.getBoundingClientRect(); return box.left >= 0 && box.right <= innerWidth; })).toBe(true);
     await page.screenshot({ path: "../.local/menu-" + test.info().project.name + "-" + width + ".png" });
     await page.keyboard.press("Escape");

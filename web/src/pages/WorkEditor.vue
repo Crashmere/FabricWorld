@@ -6,6 +6,7 @@ import { newWork, workCategories, type Work } from "../works";
 import type { Fabric, FabricList } from "../types";
 import Icon from "../components/Icon.vue";
 import WorkPhotos from "../components/WorkPhotos.vue";
+import ChoiceField from "../components/ChoiceField.vue";
 const route = useRoute(), router = useRouter(), editing = Boolean(route.params.id);
 const w = ref(newWork()), loading = ref(true), initialized = ref(false), saving = ref(false), saved = ref(false);
 const error = ref(""), field = ref(""), recovered = ref(false), pending = ref(0), tags = ref("");
@@ -148,7 +149,7 @@ onUnmounted(() => window.removeEventListener("beforeunload", beforeUnload));
       <fieldset class="fields-column" :disabled="saving || uncertain">
         <section class="form-panel"><div class="section-title"><h2><span class="section-number">01</span>这件作品</h2></div>
           <label>成品名称<input v-model="w.name" required maxlength="200" placeholder="例如：秋天的亚麻衬衫" :aria-invalid="field === 'name'" /></label>
-          <div class="field-row purchase-fields"><label>类别 <span class="optional">选填</span><input v-model="w.category" list="work-categories" maxlength="40" placeholder="选择或输入类别" /><datalist id="work-categories"><option v-for="c in workCategories" :key="c" :value="c" /></datalist></label><label>完成日期 <span class="optional">选填</span><span class="date-input"><input v-model="w.completedDate" type="date" min="1900-01-01" max="2200-12-31" :aria-invalid="field === 'completedDate'" /></span></label></div>
+          <div class="field-row purchase-fields"><label>类别 <span class="optional">选填</span><ChoiceField v-model="w.category" label="类别" editable :options="workCategories" :maxlength="40" placeholder="选择或输入类别" /></label><label>完成日期 <span class="optional">选填</span><span class="date-input"><input v-model="w.completedDate" type="date" min="1900-01-01" max="2200-12-31" :aria-invalid="field === 'completedDate'" /></span></label></div>
           <label>纸样 / 教程 <span class="optional">选填</span><input v-model="w.pattern" maxlength="300" placeholder="纸样名称、编号或教程出处" /></label>
           <div class="field-row"><label>尺码<input v-model="w.size" maxlength="80" placeholder="例如：M，腰围按需调整" /></label><label>为谁制作<input v-model="w.recipient" maxlength="80" placeholder="例如：自己、家人" /></label></div>
           <label>标签<input v-model="tags" maxlength="820" placeholder="例如：春秋，练习作品，以逗号分隔" :aria-invalid="field === 'tags'" /></label>
