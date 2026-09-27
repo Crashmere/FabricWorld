@@ -10,4 +10,4 @@
 | 验证证据与未验证项 | [VERIFICATION.md](VERIFICATION.md) |
 | 已审核设计基线 | [TECHNICAL_PLAN.md](TECHNICAL_PLAN.md) |
 
-共享服务器维护入口为 server-operations，服务器副本 /opt/server-context。用户确认无登录的共享布料库，持有网址的人可查看、编辑、删除和导出。
+共享服务器维护入口为 server-operations，服务器副本 /opt/server-context。用户确认无登录的共享布料与成品库，持有网址的人可查看、编辑、删除和导出。

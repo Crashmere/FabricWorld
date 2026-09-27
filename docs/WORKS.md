@@ -41,7 +41,7 @@
 
 ## 迁移、发布与回退
 
-当前分支实现需经生产迁移授权后发布。生产发布状态与实际验证见 [VERIFICATION.md](VERIFICATION.md)。上线前不把本分支文档作为已部署状态同步到服务器。
+成品模块已于 2026-09-27 经用户授权完成生产备份、迁移和发布，运行提交为 ae936800。实际验证及 CI 上传超时后的备用发布记录见 [VERIFICATION.md](VERIFICATION.md)。后续涉及数据库结构的生产迁移仍按 server-operations 授权表执行。
 
 1. 完成 Go/race/vet、前端类型检查和构建、Chromium/WebKit 业务测试；测试仅使用隔离合成库。
 2. 根据 server-operations 的授权表确认这次生产数据库迁移后，合入并推送 main 触发原 CI and deploy。
