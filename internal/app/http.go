@@ -43,10 +43,7 @@ func originOK(r *http.Request) bool {
 		return true
 	}
 	u, e := url.Parse(origin)
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
+	scheme := requestScheme(r)
 	return e == nil && u.Host == r.Host && u.Scheme == scheme && u.Path == ""
 }
 func (s *Store) Handler(assets fs.FS) http.Handler {
