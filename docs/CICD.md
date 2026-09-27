@@ -10,7 +10,7 @@ webkit-photos 运行 photo-preview.spec.ts 与 photo-viewer.spec.ts，覆盖 320
 
 成品模块增加 webkit-works，运行 works.spec.ts，覆盖成品照片、布料关联、草稿和并发修改、提交恢复、导出与回收站，以及 320/375/1440 px 长文本布局。涉及生产数据库结构的迁移需依 server-operations 授权表获准后才合入 main；发布顺序和兼容保护见 [WORKS.md](WORKS.md)。
 
-production 环境 secrets：SSH_HOST、SSH_USER、SSH_PRIVATE_KEY、SSH_KNOWN_HOSTS。通过已受信连接核实主机公钥；不关闭严格主机校验。部署账号 fabricworld-deploy 的 authorized_keys 使用 restrict 和强制命令，只有 `deploy <commit> <sha256>`，没有 shell/SCP/端口转发。root 管理强制命令、发布脚本和 sudoers。
+production 环境 secrets：SSH_HOST、SSH_USER、SSH_PRIVATE_KEY、SSH_KNOWN_HOSTS。通过已受信连接核实主机公钥；不关闭严格主机校验。部署账号 fabricworld-deploy 的 authorized_keys 使用 restrict 和强制命令，只允许 `deploy`、`portal-check`、`portal` 三种固定的 commit/SHA-256 命令，没有 shell/SCP/端口转发。root 管理强制命令、发布脚本和 sudoers。
 
 setup-ci.sh 接受一份 Ed25519 公钥，拒绝已有身份；私钥只进入 GitHub Secrets。该身份拥有 FabricWorld 代码/数据权限，不是整机管理员。普通发布不能修改 Nginx、unit、部署脚本或服务器文档。
 
@@ -21,3 +21,9 @@ setup-ci.sh 接受一份 Ed25519 公钥，拒绝已有身份；私钥只进入 G
 每次发布保留 releases/ 中的候选、previous、metadata、result，成功后更新 current-commit。历史和 before-deploy 备份暂由运维定期清理（先明确保留点）；daily 自动保留 14 份。首次安装由管理员使用 install.sh，后续发布由 CI and deploy 完成。
 
 CI and deploy 的发布步骤以 exit code 124 结束、最新发布目录为 failed 且没有 metadata，是 GitHub runner 到服务器的上传超时。不要反复重跑，直接按共享的 [GitHub 上传过慢时的备用发布](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#github-上传过慢时的备用发布)处理（服务器副本 `/opt/server-context/references/common-issues.md`），其中也包括残留清理。FabricWorld 的参数：产物取自失败的 CI and deploy run 本身，artifact `fabricworld-linux`（文件 `fabricworld-linux-amd64`），验收 `/fabricworld/healthz` 与 `/fabricworld/new`，不写测试数据。
+
+## 门户声明随发布同步
+
+verify 作业从固定提交的 agent-config 取得共享校验器，检查 deploy/portal.json 与受限 SSH 协议，产物包含同提交声明。deploy 作业先执行 portal-check 预检；程序发布成功后执行 portal，同步本应用声明并核对门户加载哈希。声明更新失败会使 CI 失败；已经成功发布的业务程序不会因此自动回退，旧声明会保留或恢复，按共享门户维护规则修正后重试。
+
+main 上手动运行时可选 portal_only=true：仍执行测试和声明检查，仅发布门户信息，保留当前程序与 current-commit。常规源码发布使用默认 false。程序健康由服务器回环检查，公网 HTTPS 检查验证无凭据返回 401。完整协议、权限边界、新应用登记与故障处理见 [共享门户维护](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/portal.md)。
