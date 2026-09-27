@@ -59,6 +59,7 @@ func (s *Store) Handler(assets fs.FS) http.Handler {
 			}
 		})
 	}
+	s.workRoutes(handle)
 	handle("GET /healthz", func(w http.ResponseWriter, r *http.Request) error {
 		if e := s.DB.PingContext(r.Context()); e != nil {
 			return e

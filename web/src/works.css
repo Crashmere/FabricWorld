@@ -1,0 +1,58 @@
+/* The fabric library and finished pieces share the same visual language. */
+.module-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 26px; }
+.module-tabs a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 18px; border-radius: 10px; color: var(--muted); font-size: 14px; }
+.module-tabs a.active { background: #e8eee5; color: var(--green-dark); font-weight: 600; }
+.page-module-tabs { max-width: 1240px; margin: 28px auto 0; }
+.page-module-tabs + .page { padding-top: 25px; }
+.work-filters { display: flex; gap: 12px; margin-top: 14px; }
+.work-filters label { flex: 1; max-width: 220px; min-width: 0; }
+.works-page .search-submit { display: block; }
+.work-results { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin: 24px 0 18px; }
+.work-results > div { display: flex; gap: 18px; }
+.work-results a { color: var(--green); text-decoration: underline; text-underline-offset: 4px; }
+.work-card .card-photo { position: relative; aspect-ratio: 4 / 5; overflow: hidden; background: #eeeae0; }
+.work-card .card-photo > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.work-category { position: absolute; bottom: 12px; left: 12px; background: #fffef3eb; border-radius: 5px; padding: 5px 9px; font-size: 11px; color: var(--green-dark); }
+.work-card .card-body h2 { margin-bottom: 8px; }
+.work-card .card-body p { font-size: 12px; color: var(--muted); }
+.work-pattern, .work-source { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.work-source { margin-top: 12px; font-size: 12px; color: var(--green); }
+.work-source svg { vertical-align: -2px; margin-right: 6px; }
+.work-trash-link { margin-top: 36px; }
+.work-editor .form-panel > label, .work-editor .form-panel > .field-row { margin-bottom: 18px; }
+.work-fabric-choice { margin: 16px 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: #f8f9f5; }
+.work-fabric-choice > div, .work-source-detail > a { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.work-fabric-choice strong, .work-source-detail strong, .related-work span { min-width: 0; overflow-wrap: anywhere; }
+.work-fabric-choice label { margin-top: 6px; }
+.work-fabric-search { display: flex; gap: 8px; align-items: end; margin-top: 20px; }
+.work-fabric-search label { flex: 1; min-width: 0; }
+.work-fabric-results { max-height: 300px; overflow-y: auto; margin-top: 12px; }
+.work-fabric-results > button { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 8px; text-align: left; padding: 12px 8px; border-bottom: 1px solid var(--line); }
+.work-fabric-results span { min-width: 0; overflow-wrap: anywhere; }
+.work-fabric-results small, .related-work small { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+.work-source-detail { padding: 14px 0; border-bottom: 1px dashed var(--line); }
+.work-source-detail > a { color: var(--green); }
+.work-source-detail p { margin-top: 8px; }
+.work-detail .detail-title h1 { margin: 12px 0 18px; overflow-wrap: anywhere; }
+.work-detail .detail-title .muted { margin-top: 14px; }
+.work-detail .detail-info { min-width: 0; }
+.work-detail .detail-tags span { max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.work-detail .purchase-info { grid-template-columns: 84px minmax(0, 1fr); }
+.work-detail dd, .work-detail .notes, .work-detail .history-panel { overflow-wrap: anywhere; }
+.work-recovery { display: block; }
+.work-recovery button, .work-recovery a { display: inline-block; margin: 10px 18px 0 0; text-decoration: underline; }
+.related-work { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.related-work img { width: 52px; height: 60px; object-fit: cover; border-radius: 7px; }
+.related-work span { flex: 1; font-size: 14px; }
+.cover-label { position: absolute; left: 8px; top: 8px; padding: 3px 7px; border-radius: 4px; background: #fff9; font-size: 12px; pointer-events: none; }
+@media (max-width: 1320px) { .page-module-tabs { margin-left: 40px; margin-right: 40px; } }
+@media (max-width: 760px) {
+  .page-module-tabs { margin: 18px 20px 0; }
+  .works-page .page-heading { align-items: flex-start; flex-wrap: wrap; gap: 16px; }
+  .works-page .page-heading > .button { padding: 10px 16px; }
+  .work-editor .field-row { grid-template-columns: 1fr; }
+  .work-results { font-size: 12px; }
+  .work-results > div { gap: 12px; }
+  .work-filters { gap: 8px; }
+  .work-filters select { font-size: 14px; padding: 10px; }
+}

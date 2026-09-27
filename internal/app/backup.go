@@ -61,7 +61,30 @@ func (s *Store) Check(ctx context.Context) error {
 	if e != nil {
 		return fmt.Errorf("material catalog schema missing or incompatible; run migrate after backup: %w", e)
 	}
-	return rows.Close()
+	if e = rows.Close(); e != nil {
+		return e
+	}
+	for _, query := range []string{
+		"SELECT id,revision,body,created_at,updated_at,deleted_at FROM works LIMIT 0",
+		"SELECT work_id,revision,body FROM work_changes LIMIT 0",
+		"SELECT work_id FROM media LIMIT 0",
+	} {
+		rows, e = s.DB.QueryContext(ctx, query)
+		if e != nil {
+			return fmt.Errorf("sewing works schema missing or incompatible; run migrate after backup: %w", e)
+		}
+		if e = rows.Close(); e != nil {
+			return e
+		}
+	}
+	var guards int
+	if e = s.DB.QueryRowContext(ctx, "SELECT count(*) FROM sqlite_master WHERE type='trigger' AND name='protect_work_media'").Scan(&guards); e != nil {
+		return e
+	}
+	if guards != 1 {
+		return fmt.Errorf("work photo protection missing; run migrate after backup")
+	}
+	return nil
 }
 
 func (s *Store) checkIntegrity(ctx context.Context) error {
@@ -234,7 +257,10 @@ func (s *Store) Cleanup(ctx context.Context) error {
 	if _, e = tx.ExecContext(ctx, "DELETE FROM fabrics WHERE deleted_at<?", cut); e != nil {
 		return e
 	}
-	if _, e = tx.ExecContext(ctx, "DELETE FROM media WHERE (fabric_id IS NULL AND created_at<?) OR removed_at<?", stale, cut); e != nil {
+	if _, e = tx.ExecContext(ctx, "DELETE FROM works WHERE deleted_at<?", cut); e != nil {
+		return e
+	}
+	if _, e = tx.ExecContext(ctx, "DELETE FROM media WHERE (fabric_id IS NULL AND work_id IS NULL AND created_at<?) OR removed_at<?", stale, cut); e != nil {
 		return e
 	}
 	if _, e = tx.ExecContext(ctx, "DELETE FROM operations WHERE created_at<? AND fingerprint NOT LIKE 'ledger:%'", time.Now().UTC().Add(-7*24*time.Hour).Format(time.RFC3339Nano)); e != nil {

@@ -114,6 +114,7 @@ onMounted(async () => {
 </script>
 <template>
   <div class="library page">
+    <nav v-if="trash" class="module-tabs" aria-label="回收站分类"><RouterLink to="/trash" class="active" aria-current="page">布料回收站</RouterLink><RouterLink to="/works/trash">成品回收站</RouterLink></nav>
     <div class="page-heading">
       <div>
         <div class="eyebrow">

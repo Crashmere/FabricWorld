@@ -26,7 +26,7 @@ CREATE TABLE media(id TEXT PRIMARY KEY,fabric_id TEXT REFERENCES fabrics(id) ON 
 CREATE INDEX media_fabric ON media(fabric_id);
 CREATE TABLE changes(fabric_id TEXT NOT NULL REFERENCES fabrics(id) ON DELETE CASCADE,revision INTEGER NOT NULL,body TEXT NOT NULL,PRIMARY KEY(fabric_id,revision));
 CREATE TABLE operations(key TEXT PRIMARY KEY,fingerprint TEXT NOT NULL,result TEXT NOT NULL,created_at TEXT NOT NULL);
-` + materialCatalogSchema
+` + materialCatalogSchema + worksSchema + workMediaColumn + workMediaGuards
 
 type Store struct {
 	DB          *sql.DB
@@ -246,14 +246,14 @@ func (s *Store) Write(ctx context.Context, id, key, fp, action string, in Fabric
 	f.Photos = nil
 	if action == "save" {
 		for _, mid := range f.PhotoIDs {
-			var owner, removed sql.NullString
+			var owner, workOwner, removed sql.NullString
 			var created string
-			e = tx.QueryRowContext(ctx, "SELECT fabric_id,removed_at,created_at FROM media WHERE id=?", mid).Scan(&owner, &removed, &created)
+			e = tx.QueryRowContext(ctx, "SELECT fabric_id,work_id,removed_at,created_at FROM media WHERE id=?", mid).Scan(&owner, &workOwner, &removed, &created)
 			if e != nil {
 				return nil, invalid("photos", "照片不存在或已过期，请重新上传")
 			}
-			if owner.Valid && owner.String != f.ID {
-				return nil, invalid("photos", "照片已经属于另一条布料")
+			if workOwner.Valid || (owner.Valid && owner.String != f.ID) {
+				return nil, invalid("photos", "照片已经属于另一条记录")
 			}
 			t, _ := time.Parse(time.RFC3339Nano, created)
 			if removed.Valid || (!owner.Valid && time.Since(t) > 24*time.Hour) {

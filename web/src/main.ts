@@ -6,13 +6,22 @@ import Editor from "./pages/Editor.vue";
 import Detail from "./pages/Detail.vue";
 import Remnant from "./pages/Remnant.vue";
 import Materials from "./pages/Materials.vue";
+import Works from "./pages/Works.vue";
+import WorkEditor from "./pages/WorkEditor.vue";
+import WorkDetail from "./pages/WorkDetail.vue";
 import "./style.css";
+import "./works.css";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     { path: "/", component: Library },
     { path: "/trash", component: Library },
     { path: "/materials", component: Materials },
+    { path: "/works", component: Works },
+    { path: "/works/trash", component: Works },
+    { path: "/works/new", component: WorkEditor },
+    { path: "/works/:id", component: WorkDetail },
+    { path: "/works/:id/edit", component: WorkEditor },
     { path: "/new", component: Editor },
     { path: "/fabrics/:id", component: Detail },
     {

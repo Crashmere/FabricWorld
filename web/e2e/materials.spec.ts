@@ -27,6 +27,8 @@ test("material percentages persist independently of notes with decimal inputs", 
   await page.getByRole("button", { name: "麻", exact: true }).click();
   await page.getByRole("button", { name: "保存布料", exact: true }).click();
   await expect(page).toHaveURL(/\/fabricworld\/$/);
+  await page.getByLabel("搜索布料", { exact: true }).fill(name);
+  await page.getByLabel("搜索布料", { exact: true }).press("Enter");
   await page.locator(".fabric-card").filter({ has: page.getByRole("heading", { name, exact: true }) }).getByRole("link").click();
   await expect(page.locator(".detail-materials")).toHaveText("棉 100%");
   const detailURL = page.url();
@@ -109,6 +111,8 @@ test("material percentages persist independently of notes with decimal inputs", 
   await page.getByRole("button", { name: "亚麻混纺", exact: true }).click();
   await page.getByRole("button", { name: "保存布料", exact: true }).click();
   await expect(page).toHaveURL(/\/fabricworld\/$/);
+  await page.getByLabel("搜索布料", { exact: true }).fill(copyName);
+  await page.getByLabel("搜索布料", { exact: true }).press("Enter");
   await page.locator(".fabric-card").filter({ has: page.getByRole("heading", { name: copyName, exact: true }) }).getByRole("link").click();
   await expect(page.locator(".detail-materials")).toHaveText("麻 100%");
   expect(errors).toEqual([]);

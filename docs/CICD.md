@@ -6,11 +6,13 @@ Playwright 的 chromium 项目运行全部流程；webkit-purchase 使用 iPhone
 
 webkit-photos 运行 photo-preview.spec.ts 与 photo-viewer.spec.ts，覆盖 320/375/1440 px 的本地/已上传照片预览、图片缩放、拖动、复位、切图和焦点。原生双指注入通过 Chromium CDP 验证图片变大且 visualViewport.scale 不变；WebKit 跳过这项 CDP 专用用例，仍运行按钮、鼠标及键盘交互。
 
+成品模块增加 webkit-works，运行 works.spec.ts，覆盖成品照片、布料关联、草稿和并发修改、提交恢复、导出与回收站，以及 320/375/1440 px 长文本布局。成品迁移需依 server-operations 授权表获准后才合入 main；发布顺序和兼容保护见 [WORKS.md](WORKS.md)。
+
 production 环境 secrets：SSH_HOST、SSH_USER、SSH_PRIVATE_KEY、SSH_KNOWN_HOSTS。通过已受信连接核实主机公钥；不关闭严格主机校验。部署账号 fabricworld-deploy 的 authorized_keys 使用 restrict 和强制命令，只有 `deploy <commit> <sha256>`，没有 shell/SCP/端口转发。root 管理强制命令、发布脚本和 sudoers。
 
 setup-ci.sh 接受一份 Ed25519 公钥，拒绝已有身份；私钥只进入 GitHub Secrets。该身份拥有 FabricWorld 代码/数据权限，不是整机管理员。普通发布不能修改 Nginx、unit、部署脚本或服务器文档。
 
-发布脚本验证尺寸、SHA-256 和提交格式，保存旧程序，停止 FabricWorld，生成数据库+图片备份，以应用身份运行候选 migrate 和 check，再原子替换启动。当前 migrate 仅补充 material_catalog 表，兼容旧程序的 v1 格式；迁移失败进入旧程序恢复分支，成功的兼容扩展可在程序回退后保留。健康失败恢复旧程序；不自动恢复数据库。发布和每日备份可能锁冲突，发布失败时旧程序重启并报告错误。
+发布脚本验证尺寸、SHA-256 和提交格式，保存旧程序，停止 FabricWorld，生成数据库+图片备份，以应用身份运行候选 migrate 和 check，再原子替换启动。当前 migrate 补充 material_catalog、works、work_changes 与 media.work_id、索引和照片保护触发器，兼容旧程序的 v1 布料格式；迁移失败进入旧程序恢复分支，成功的兼容扩展可在程序回退后保留。健康失败恢复旧程序；不自动恢复数据库。发布和每日备份可能锁冲突，发布失败时旧程序重启并报告错误。
 
 `bash deploy/test-release.sh` 在 Linux 临时目录使用模拟服务检查上述失败分支与成功分支；实际发布脚本保留固定路径和 root 检查。verify 作业运行此测试，包含 migrate 失败分支，不在正式实例上制造故障。发布脚本由 root 管理，修改后需从已提交来源同步到 /opt/fabricworld/bin/deploy-release.sh；普通二进制发布不覆盖它。
 

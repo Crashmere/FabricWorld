@@ -32,6 +32,11 @@ async function openWithKeyboard() {
   menu.value?.querySelector<HTMLElement>("nav a")?.focus();
 }
 watch(() => route.fullPath, () => closeMenu());
+watch(() => route.path, path => {
+  const title = path === '/works' ? '我的成品' : path === '/works/new' ? '记录成品'
+    : path === '/works/trash' ? '成品回收站' : path.startsWith('/works/') ? (path.endsWith('/edit') ? '编辑成品' : '成品详情') : '我的布料';
+  document.title = title + ' · FabricWorld';
+}, { immediate: true });
 onMounted(() => {
   window.addEventListener("online", update);
   window.addEventListener("offline", update);
@@ -60,6 +65,7 @@ onUnmounted(() => {
       <nav v-if="menuOpen" id="header-navigation" class="header-dropdown" aria-label="网站菜单">
         <RouterLink to="/trash" @click="closeMenu()"><Icon name="trash" />回收站</RouterLink>
         <RouterLink to="/materials" @click="closeMenu()"><Icon name="box" />材质管理</RouterLink>
+        <RouterLink to="/works" @click="closeMenu()"><Icon name="scissors" />成品集</RouterLink>
       </nav>
     </div>
   </header>
@@ -67,6 +73,10 @@ onUnmounted(() => {
     网络已断开，尚未保存的输入会保留在当前页面。
   </div>
   <main>
+    <nav v-if="route.path === '/' || route.path === '/works'" class="module-tabs page-module-tabs" aria-label="资料库">
+      <RouterLink to="/" :class="{ active: route.path === '/' }" :aria-current="route.path === '/' ? 'page' : undefined"><Icon name="box" :size="17" />布料库</RouterLink>
+      <RouterLink to="/works" :class="{ active: route.path === '/works' }" :aria-current="route.path === '/works' ? 'page' : undefined"><Icon name="scissors" :size="17" />成品集</RouterLink>
+    </nav>
     <RouterView v-slot="{ Component, route }"
       ><component :is="Component" :key="route.path"
     /></RouterView>

@@ -17,6 +17,11 @@ export default defineConfig({
       },
     },
     {
+      name: "webkit-works",
+      testMatch: "**/works.spec.ts",
+      use: { ...devices["iPhone 13"], browserName: "webkit" },
+    },
+    {
       name: "webkit-purchase",
       testMatch: "**/purchase.spec.ts",
       use: { ...devices["iPhone 13"], browserName: "webkit" },

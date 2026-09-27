@@ -249,7 +249,7 @@ func (s *Store) MediaPath(ctx context.Context, id, variant string) (string, erro
 	}
 	var owner, removed, deleted sql.NullString
 	var created string
-	e := s.DB.QueryRowContext(ctx, "SELECT m.fabric_id,m.removed_at,m.created_at,f.deleted_at FROM media m LEFT JOIN fabrics f ON f.id=m.fabric_id WHERE m.id=?", id).Scan(&owner, &removed, &created, &deleted)
+	e := s.DB.QueryRowContext(ctx, "SELECT coalesce(m.fabric_id,m.work_id),m.removed_at,m.created_at,coalesce(f.deleted_at,w.deleted_at) FROM media m LEFT JOIN fabrics f ON f.id=m.fabric_id LEFT JOIN works w ON w.id=m.work_id WHERE m.id=?", id).Scan(&owner, &removed, &created, &deleted)
 	if e != nil || removed.Valid || deleted.Valid {
 		return "", fail(404, "not_found", "照片不存在")
 	}
