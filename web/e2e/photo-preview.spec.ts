@@ -56,7 +56,9 @@ for (const width of [320, 375, 1440]) {
     await expect(modal).toHaveCount(0);
     expect(writes).toEqual([]);
     await page.getByRole("button", { name: "保存布料", exact: true }).click();
+    await expect(page).toHaveURL(/\/fabricworld\/$/);
     await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+    await page.locator(".fabric-card").filter({ has: page.getByRole("heading", { name, exact: true }) }).getByRole("link").click();
     await page.getByRole("link", { name: "编辑资料", exact: true }).click();
     await trigger.click();
     await expect(modal).toBeVisible();

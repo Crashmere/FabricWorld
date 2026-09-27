@@ -21,7 +21,6 @@ const f = ref<Fabric>(newFabric()),
   saving = ref(false),
   error = ref(""),
   errorField = ref(""),
-  customMaterial = ref(""),
   tags = ref(""),
   suggestions = ref<Record<string, string[]>>({}),
   draftRecovered = ref(false),
@@ -65,14 +64,6 @@ function toggleMaterial(m: string) {
   const i = f.value.materials.indexOf(m);
   if (i >= 0) f.value.materials.splice(i, 1);
   else if (f.value.materials.length < 20) f.value.materials.push(m);
-  syncMaterialPercentages(previousCount);
-}
-function addMaterial() {
-  const previousCount = f.value.materials.length;
-  const m = customMaterial.value.trim();
-  if (m && !f.value.materials.includes(m) && f.value.materials.length < 20)
-    f.value.materials.push(m);
-  customMaterial.value = "";
   syncMaterialPercentages(previousCount);
 }
 async function processQueue() {
@@ -199,7 +190,7 @@ async function save() {
     saved.value = true;
     sessionStorage.removeItem(draftKey);
     toast(editing ? "修改已保存" : "新布料已记录");
-    await router.replace("/fabrics/" + result.id);
+    await router.replace(editing ? "/fabrics/" + result.id : "/");
   } catch (e) {
     error.value = (e as Error).message;
     if (e instanceof APIError) {
@@ -218,7 +209,7 @@ async function resolve() {
     const result = await request<Fabric>("operations/" + opKey);
     saved.value = true;
     sessionStorage.removeItem(draftKey);
-    await router.replace("/fabrics/" + result.id);
+    await router.replace(editing ? "/fabrics/" + result.id : "/");
   } catch (e) {
     error.value = (e as Error).message + "。可以按原内容重试保存。";
   } finally {
@@ -534,21 +525,6 @@ onUnmounted(() => {
               }}<Icon v-if="f.materials.includes(m)" name="check" :size="13" />
             </button>
             </div>
-          </div>
-          <div class="custom-material">
-            <input
-              v-model="customMaterial"
-              maxlength="40"
-              placeholder="其他材质"
-              aria-label="自定义材质"
-              @keydown.enter.prevent="addMaterial"
-            /><button
-              type="button"
-              class="button secondary"
-              @click="addMaterial"
-            >
-              添加
-            </button>
           </div>
           <label
             >成分说明 <span class="optional">选填</span

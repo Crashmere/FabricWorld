@@ -41,6 +41,8 @@ test("mobile photo, dimensions, remnants, history, trash and restore", async ({
     timeout: 30000,
   });
   await page.getByRole("button", { name: "保存布料", exact: true }).click();
+  await expect(page).toHaveURL(/\/fabricworld\/$/);
+  await page.locator(".fabric-card").filter({ has: page.getByRole("heading", { name: /测试 · 蓝色棉麻/ }) }).getByRole("link").click();
   await expect(
     page.getByRole("heading", { name: /测试 · 蓝色棉麻/ }),
   ).toBeVisible();
@@ -313,7 +315,8 @@ test("reload during a committed write preserves its operation key", async ({
     }),
   ).toBeVisible();
   await page.getByRole("button", { name: "查询上次结果" }).click();
-  await expect(page).toHaveURL(new RegExp("/fabrics/" + createdID + "$"));
+  await expect(page).toHaveURL(/\/fabricworld\/$/);
+  await expect(page.locator(".fabric-card").filter({ has: page.getByRole("heading", { name, exact: true }) }).getByRole("link")).toHaveAttribute("href", "/fabricworld/fabrics/" + createdID);
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
   const response = await page.request.get(
     "./api/fabrics?q=" + encodeURIComponent(name),

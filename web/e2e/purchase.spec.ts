@@ -46,8 +46,11 @@ test("purchase date stays in bounds when empty, filled, focused and edited", asy
   }
 
   await page.setViewportSize({ width: 375, height: 667 });
-  await page.getByLabel("布料名称").fill("日期兼容测试 " + Date.now());
+  const name = "日期兼容测试 " + Date.now();
+  await page.getByLabel("布料名称").fill(name);
   await page.getByRole("button", { name: "保存布料", exact: true }).click();
+  await expect(page).toHaveURL(/\/fabricworld\/$/);
+  await page.locator(".fabric-card").filter({ has: page.getByRole("heading", { name, exact: true }) }).getByRole("link").click();
   await page.getByRole("link", { name: "编辑资料", exact: true }).click();
   await expect(page.getByLabel("购买日期")).toHaveValue("2026-09-19");
   await expect(page.getByLabel("购买总价 / 元")).toHaveValue("1234.56");

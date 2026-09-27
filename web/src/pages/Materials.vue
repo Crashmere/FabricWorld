@@ -8,9 +8,13 @@ type Result = { name: string; affected?: number };
 type Pending = { material: Material; operationKey: string; action?: "add" | "remove" };
 const items = ref<Material[]>([]);
 const loading = ref(true), busy = ref(false), error = ref(""), actionError = ref(""), search = ref("");
+const newMaterial = ref("");
 const pending = ref<Pending | null>(null), uncertain = ref(false);
 const storageKey = "fabricworld:material-removal";
 const searchName = computed(() => search.value.trim());
+const newName = computed(() => newMaterial.value.trim());
+const exists = computed(() => items.value.some(item => item.name === newName.value));
+const canAdd = computed(() => Boolean(newName.value) && !exists.value && !loading.value && !error.value && !busy.value && !pending.value);
 const adding = computed(() => pending.value?.action === "add");
 const filtered = computed(() => items.value.filter(item => item.name.toLocaleLowerCase().includes(search.value.trim().toLocaleLowerCase())));
 async function load() {
@@ -25,8 +29,8 @@ function confirm(material: Material) {
   actionError.value = "";
 }
 function add() {
-  if (!searchName.value || filtered.value.length || loading.value || error.value || busy.value) return;
-  pending.value = { action: "add", material: { name: searchName.value, count: 0, trashCount: 0, version: "" }, operationKey: key() };
+  if (!canAdd.value) return;
+  pending.value = { action: "add", material: { name: newName.value, count: 0, trashCount: 0, version: "" }, operationKey: key() };
   submit();
 }
 function close() {
@@ -43,6 +47,10 @@ async function completed(result: Result) {
   uncertain.value = false;
   forget();
   pending.value = null;
+  if (wasAdding) {
+    newMaterial.value = "";
+    search.value = result.name;
+  }
   toast(wasAdding ? "已添加材质“" + result.name + "”" : "已移除材质“" + result.name + "”，更新了 " + result.affected + " 条布料");
   await load();
 }
@@ -101,6 +109,14 @@ onMounted(async () => {
       </div>
     </div>
     <p v-if="error" class="error-banner" role="alert">{{ error }}<button type="button" @click="load">刷新列表</button></p>
+    <form class="material-create" @submit.prevent="add">
+      <label for="new-material">添加材质</label>
+      <div class="material-create-fields">
+        <input id="new-material" v-model="newMaterial" maxlength="40" placeholder="输入新的材质名称" :disabled="busy" />
+        <button type="submit" class="button primary" :disabled="!canAdd"><Icon name="plus" />添加材质</button>
+      </div>
+      <p class="field-hint">{{ exists ? '该材质已存在，可在下方搜索查看。' : '添加后，即可在记录或编辑布料时选择。' }}</p>
+    </form>
     <p class="field-hint material-count-hint">数量包含回收站中的布料。同一条布料含多种材质时，会分别计入。</p>
     <label class="material-search"><span class="sr-only">搜索材质</span><input v-model="search" type="search" maxlength="40" placeholder="搜索材质名称" /></label>
     <p v-if="loading" class="loading-text">正在加载材质…</p>
@@ -114,8 +130,7 @@ onMounted(async () => {
       </li>
     </ul>
     <div v-else-if="!error" class="material-empty">
-      <p>{{ searchName ? '没有找到匹配的材质。' : '还没有已添加的材质。输入名称即可添加，也可以在记录布料时添加。' }}</p>
-      <button v-if="searchName" type="button" class="button primary material-add" :disabled="busy" @click="add"><Icon name="plus" /><span>添加“{{ searchName }}”</span></button>
+      <p>{{ searchName ? '没有找到匹配的材质。' : '还没有已添加的材质。可在上方输入名称添加。' }}</p>
     </div>
     <Modal v-if="pending" :title="adding ? '添加材质' : '移除材质？'" @close="close">
       <div class="filter-form">

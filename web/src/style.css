@@ -202,8 +202,11 @@ img {
 .material-info p { margin-top: 5px; color: var(--muted); font-size: 12px; }
 .material-remove { flex-shrink: 0; padding: 9px 12px; font-size: 13px; }
 .material-empty { text-align: center; color: var(--muted); padding: 24px 0; }
-.button.material-add { margin-top: 20px; max-width: 100%; white-space: normal; }
-.material-add span { min-width: 0; overflow-wrap: anywhere; }
+.material-create { margin-bottom: 24px; padding: 18px 16px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.material-create-fields { display: flex; gap: 9px; margin-top: 8px; }
+.material-create-fields input { flex: 1; min-width: 0; margin: 0; }
+.material-create-fields .button { flex-shrink: 0; padding: 9px 12px; }
+.material-create .field-hint { margin-top: 8px; }
 .page {
   max-width: 1240px;
   margin: auto;
@@ -788,19 +791,6 @@ img {
 }
 .material-single-percentage {
   padding-left: 12px;
-}
-.custom-material {
-  display: flex;
-  gap: 9px;
-  margin-top: 12px;
-}
-.custom-material input {
-  font-size: 14px;
-  padding: 9px 12px;
-}
-.custom-material .button {
-  min-height: 40px;
-  padding: 7px 15px;
 }
 .upload-empty {
   padding: 25px 15px 28px;

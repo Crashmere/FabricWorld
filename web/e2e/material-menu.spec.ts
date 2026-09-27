@@ -2,14 +2,15 @@ import { test, expect } from "@playwright/test";
 import { randomBytes } from "node:crypto";
 import { newFabric } from "../src/types";
 
-test("add unused material from empty search and reuse it in the editor", async ({ page }) => {
+test("add unused material in management and reuse it in the editor", async ({ page }) => {
   const name = "自定义零使用材质" + Date.now();
   await page.goto("./materials");
   const search = page.getByRole("searchbox", { name: "搜索材质" });
-  await search.fill("   ");
-  await expect(page.getByRole("button", { name: /^添加“/ })).toHaveCount(0);
-  await search.fill(name);
-  const add = page.getByRole("button", { name: "添加“" + name + "”", exact: true });
+  const input = page.getByRole("textbox", { name: "添加材质", exact: true });
+  const add = page.getByRole("button", { name: "添加材质", exact: true });
+  await input.fill("   ");
+  await expect(add).toBeDisabled();
+  await input.fill(name);
   await expect(add).toBeVisible();
   for (const width of [320, 375, 1440]) {
     await page.setViewportSize({ width, height: width === 1440 ? 900 : 667 });
@@ -32,14 +33,16 @@ test("add unused material from empty search and reuse it in the editor", async (
   await search.fill(name);
   const row = page.locator(".material-row").filter({ has: page.getByRole("heading", { name, exact: true }) });
   await expect(row).toContainText("0 条布料");
-  await expect(add).toHaveCount(0);
+  await input.fill(name);
+  await expect(add).toBeDisabled();
   await row.getByRole("button").click();
   await expect(page.getByRole("dialog")).toContainText("目前没有布料使用它");
   await page.getByRole("button", { name: "确认移除", exact: true }).click();
-  await expect(add).toBeVisible();
+  await expect(add).toBeEnabled();
   await add.click();
   await expect(row).toContainText("0 条布料");
   await page.goto("./new");
+  await expect(page.getByLabel("自定义材质")).toHaveCount(0);
   await page.getByLabel("布料名称", { exact: true }).fill("独立材质使用测试");
   await page.getByRole("button", { name, exact: true }).click();
   await expect(page.locator(".material-single-percentage")).toHaveText("100%");
@@ -47,13 +50,14 @@ test("add unused material from empty search and reuse it in the editor", async (
   await expect(page.getByLabel(name + "百分比", { exact: true })).toHaveValue("");
   await expect(page.getByLabel("棉百分比", { exact: true })).toHaveValue("");
   await page.getByRole("button", { name: "保存布料", exact: true }).click();
-  await expect(page.getByRole("link", { name: "编辑资料", exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/fabricworld\/$/);
+  await expect(page.getByRole("heading", { name: "我的布料", exact: true })).toBeVisible();
   await page.goto("./materials");
   await search.fill(name);
   await expect(row).toContainText("1 条布料");
   await row.getByRole("button").click();
   await page.getByRole("button", { name: "确认移除", exact: true }).click();
-  await expect(add).toBeVisible();
+  await expect(row).toHaveCount(0);
 });
 
 test("header menu and material removal preserve fabrics and recover interrupted responses", async ({ page, request }) => {
