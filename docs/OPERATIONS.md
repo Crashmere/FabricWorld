@@ -1,6 +1,6 @@
 # 安装、运行与恢复
 
-公网入口使用可信 IP 证书的 HTTPS，原有 /fabricworld/ 路径保持。公网 HTTP 返回 308；API 客户端直接使用 HTTPS。Nginx 覆盖 `X-Forwarded-Proto`；写入来源校验只信任来自回环地址的代理头，仍拒绝跨站来源。证书、续期、回退和整机验收见 [共享 HTTPS 运维](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/https.md)（服务器副本 /opt/server-context/references/https.md）。本项目的后端与发布检查保留本机 HTTP，127.0.0.1:80 的代理检查入口不能从公网访问。HTTPS 只加密传输，登录认证尚未接入。
+公网入口使用可信 IP 证书的 HTTPS，原有 /fabricworld/ 路径保持。公网 HTTP 返回 308；API 客户端直接使用 HTTPS。Nginx 覆盖 `X-Forwarded-Proto`；写入来源校验只信任来自回环地址的代理头，仍拒绝跨站来源。证书、续期、回退和整机验收见 [共享 HTTPS 运维](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/https.md)（服务器副本 /opt/server-context/references/https.md）。本项目的后端与发布检查保留本机 HTTP，127.0.0.1:80 的代理检查入口不能从公网访问。公网已接入 ServerPortal 统一设备认证：先在 /portal/login 输入口令授权设备，随后使用同源 Secure/HttpOnly Cookie 访问；未授权 API 返回 401。本机发布检查与服务间调用保留。
 
 维护前使用 server-operations，显式 `ssh ali 'cat /opt/AGENTS.md'`。共享 Nginx/server-context 不属于本项目。真实主机地址从受信 SSH 配置取得，不写入 public 仓库。
 
@@ -124,6 +124,6 @@ Ledger 从本机 HTTP 调用 /api/integrations/ledger，默认目标 127.0.0.1:1
 
 ## ServerPortal 接入材料
 
-已在源码登记 `deploy/portal.json`，待门户上线时安装到本项目 config 目录。声明包含真实目录用途、只读浏览权限、数据库、API、端口、unit 与原生 backup 契约。生产目前仍以本文开头和共享 current-state 的访问方式为准；本次只增加接入材料，没有切换认证或执行清理。
+`deploy/portal.json` 已安装到本项目 config 目录，由 root 管理。声明包含目录用途、只读浏览权限、数据库、API、端口、unit 与原生 backup 契约。门户 /portal/ 已上线并统一保护公网访问；没有执行生产数据或历史备份清理。
 
-维护数据根、媒体、备份格式、unit、端口或路径时，同时修改声明和对应文档；安装后通过门户核对资源覆盖与隔离恢复。ServerPortal 的加密整机材料备份覆盖本项目当前数据、配置、程序、文档、发布身份公钥及可选历史备份/版本；不得以复制活动 WAL 主文件代替本项目原生 backup。统一认证启用后，公网页面和接口由设备凭据保护，本机发布检查仍保留。
+维护数据根、媒体、备份格式、unit、端口或路径时，同时修改声明和对应文档；安装后通过门户核对资源覆盖与隔离恢复。ServerPortal 的加密整机材料备份覆盖本项目当前数据、配置、程序、文档、发布身份公钥及可选历史备份/版本；不得以复制活动 WAL 主文件代替本项目原生 backup。公网页面和接口已由统一设备凭据保护，本机发布检查仍保留。
