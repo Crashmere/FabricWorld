@@ -1,0 +1,206 @@
+{
+  "id": "fabricworld",
+  "name": "FabricWorld",
+  "description": "布料、成品与创作记录。",
+  "icon": "/portal/static/icons/fabricworld.png",
+  "url": "/fabricworld/",
+  "repo": "https://github.com/Crashmere/FabricWorld",
+  "root": "/opt/fabricworld",
+  "port": 18082,
+  "user": "fabricworld",
+  "units": [
+    "fabricworld.service",
+    "fabricworld-backup.service",
+    "fabricworld-backup.timer"
+  ],
+  "database": "/opt/fabricworld/data/fabricworld.db",
+  "backupKind": "media",
+  "resources": [
+    {
+      "id": "data",
+      "name": "业务数据",
+      "path": "/opt/fabricworld/data",
+      "purpose": "数据库、图片与历史迁移材料；临时文件不属于恢复数据。",
+      "kind": "data",
+      "browse": true,
+      "cleanup": false
+    },
+    {
+      "id": "backups",
+      "name": "数据备份",
+      "path": "/opt/fabricworld/backups",
+      "purpose": "daily、manual 与 before-deploy 一致性快照。",
+      "kind": "backups",
+      "browse": true,
+      "cleanup": true
+    },
+    {
+      "id": "releases",
+      "name": "部署版本",
+      "path": "/opt/fabricworld/releases",
+      "purpose": "程序、发布结果与 previous 回退材料。",
+      "kind": "releases",
+      "browse": true,
+      "cleanup": true
+    },
+    {
+      "id": "config",
+      "name": "运行配置",
+      "path": "/opt/fabricworld/config",
+      "purpose": "环境配置、systemd、Nginx 与资源声明；不直接展示秘密。",
+      "kind": "config",
+      "browse": false,
+      "cleanup": false
+    },
+    {
+      "id": "bin",
+      "name": "服务程序",
+      "path": "/opt/fabricworld/bin",
+      "purpose": "当前应用程序及固定维护/发布脚本。",
+      "kind": "binaries",
+      "browse": false,
+      "cleanup": false
+    },
+    {
+      "id": "docs",
+      "name": "维护文档",
+      "path": "/opt/fabricworld/docs",
+      "purpose": "架构、API、运维与恢复说明。",
+      "kind": "documents",
+      "browse": true,
+      "cleanup": false
+    }
+  ],
+  "apis": [
+    {
+      "method": "GET",
+      "path": "/healthz",
+      "description": "数据库可连接时返回 status=ok"
+    },
+    {
+      "method": "GET",
+      "path": "/api/fabrics",
+      "description": "items/total/offset/stats；q、status(stock/unused/using/used/all)、material、color、location、tag、min_width/min_length(cm)、sort(purchase/updated/name)、offset、trash=1"
+    },
+    {
+      "method": "POST",
+      "path": "/api/fabrics",
+      "description": "创建完整布料表单，返回 Fabric"
+    },
+    {
+      "method": "POST",
+      "path": "/api/integrations/ledger",
+      "description": "按 Ledger transactionId 幂等创建布料，返回当前 Fabric"
+    },
+    {
+      "method": "GET",
+      "path": "/api/fabrics/{id}",
+      "description": "详情，包括 pieces、photos、photoIds、revision、deletedAt"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/fabrics/{id}",
+      "description": "默认保存完整表单；action=remnant 仅更新 pieces/status，需 revision"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/fabrics/{id}",
+      "description": "body 包含 revision，软删除，返回新版本"
+    },
+    {
+      "method": "POST",
+      "path": "/api/fabrics/{id}/restore",
+      "description": "body 包含 revision，恢复 30 天内删除记录"
+    },
+    {
+      "method": "GET",
+      "path": "/api/fabrics/{id}/changes",
+      "description": "最近 100 次修改，包含 before/after 业务快照"
+    },
+    {
+      "method": "POST",
+      "path": "/api/uploads",
+      "description": "multipart 第一个 part 为 file；单文件，返回 Media"
+    },
+    {
+      "method": "GET",
+      "path": "/api/operations/{key}",
+      "description": "原写入结果；404 表示尚未查到，不能直接等同失败"
+    },
+    {
+      "method": "GET",
+      "path": "/api/suggestions",
+      "description": "materials 合并独立目录与未删除布料材质；tags/location/color 各最多 200 项"
+    },
+    {
+      "method": "GET",
+      "path": "/api/materials",
+      "description": "已保存材质数组；每项 name/count/trashCount/version，包含回收站"
+    },
+    {
+      "method": "POST",
+      "path": "/api/materials",
+      "description": "body 包含 name（去首尾空白后 1–40 字符），持久添加零使用材质；返回 name，要求 Idempotency-Key"
+    },
+    {
+      "method": "POST",
+      "path": "/api/materials/remove",
+      "description": "body 包含 name/version，原子移除全部相关布料的该材质；返回 name/affected"
+    },
+    {
+      "method": "GET",
+      "path": "/api/export",
+      "description": "format=csv/zip，与列表筛选相同；默认 stock，禁止回收站导出"
+    },
+    {
+      "method": "GET",
+      "path": "/media/{id}/main",
+      "description": "标准 JPEG；仅有效暂存或未删除记录图片"
+    },
+    {
+      "method": "GET",
+      "path": "/media/{id}/thumb",
+      "description": "WebP 缩略图"
+    },
+    {
+      "method": "GET",
+      "path": "/api/works",
+      "description": "items/total/offset/categories；q、category、fabric（来源 ID）、sort(completed/updated/name)、offset、trash=1，每页 24 件"
+    },
+    {
+      "method": "POST",
+      "path": "/api/works",
+      "description": "创建完整 Work，名称必填；返回 Work"
+    },
+    {
+      "method": "GET",
+      "path": "/api/works/{id}",
+      "description": "成品详情，含照片与布料来源可用性"
+    },
+    {
+      "method": "PUT",
+      "path": "/api/works/{id}",
+      "description": "完整编辑，提交当前 revision"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/works/{id}",
+      "description": "body 包含 revision，软删除，返回新版本"
+    },
+    {
+      "method": "POST",
+      "path": "/api/works/{id}/restore",
+      "description": "body 包含 revision，恢复 30 天内删除的成品"
+    },
+    {
+      "method": "GET",
+      "path": "/api/works/{id}/changes",
+      "description": "最近 100 次，含 before/after 成品快照"
+    },
+    {
+      "method": "GET",
+      "path": "/api/works/export",
+      "description": "format=csv/zip，使用相同搜索/类别/布料筛选，忽略分页并排除回收站"
+    }
+  ]
+}
