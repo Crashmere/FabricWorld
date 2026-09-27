@@ -61,6 +61,9 @@ for (const width of [320, 375, 1440]) {
     expect(writes).toEqual([]);
     await page.getByRole("button", { name: "保存布料", exact: true }).click();
     await expect(page).toHaveURL(/\/fabricworld\/$/);
+    // Same-day fabrics sort by a random ID and can fall outside the first page.
+    await page.getByLabel("搜索布料", { exact: true }).fill(name);
+    await page.getByLabel("搜索布料", { exact: true }).press("Enter");
     await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
     await page.locator(".fabric-card").filter({ has: page.getByRole("heading", { name, exact: true }) }).getByRole("link").click();
     await page.getByRole("link", { name: "编辑资料", exact: true }).click();

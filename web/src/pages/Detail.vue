@@ -13,6 +13,14 @@ import {
 import Icon from "../components/Icon.vue";
 import Modal from "../components/Modal.vue";
 import PhotoViewer from "../components/PhotoViewer.vue";
+import type { WorkList } from "../works";
+const relatedWorks = ref<WorkList>();
+const relatedError = ref("");
+async function loadWorks() {
+  relatedError.value = "";
+  try { relatedWorks.value = await request<WorkList>("works?fabric=" + route.params.id); }
+  catch (e) { relatedError.value = (e as Error).message; }
+}
 const route = useRoute(),
   router = useRouter(),
   fabric = ref<Fabric>(),
@@ -84,7 +92,7 @@ async function changes() {
     }
   }
 }
-onMounted(load);
+onMounted(() => { void load(); void loadWorks(); });
 </script>
 <template>
   <div class="page detail-page">
@@ -212,6 +220,13 @@ onMounted(load);
           <div v-if="fabric.notes" class="detail-block">
             <h2>备注</h2>
             <p class="notes">{{ fabric.notes }}</p>
+          </div>
+          <div class="detail-block">
+            <div class="stock-heading"><h2><Icon name="scissors" />用它做的成品</h2><RouterLink v-if="!fabric.deletedAt" class="button secondary" :to="'/works/new?fabric=' + fabric.id">记录成品</RouterLink></div>
+            <p v-if="relatedError" class="error-banner" role="alert">{{ relatedError }}<button @click="loadWorks">重试</button></p>
+            <p v-else-if="relatedWorks && !relatedWorks.total" class="muted">还没有关联成品。</p>
+            <RouterLink v-for="item in relatedWorks?.items" :key="item.id" class="related-work" :to="'/works/' + item.id"><img v-if="item.photos[0]" :src="mediaURL(item.photos[0].id)" alt="" /><Icon v-else name="scissors" /><span>{{ item.name }}<small>{{ item.completedDate || '完成日期待补充' }}</small></span><Icon name="chevron" :size="17" /></RouterLink>
+            <RouterLink v-if="relatedWorks && relatedWorks.total > relatedWorks.items.length" class="text-button" :to="'/works?fabric=' + fabric.id">查看全部 {{ relatedWorks.total }} 件成品</RouterLink>
           </div>
           <div class="detail-bottom">
             <button class="text-button" @click="changes">

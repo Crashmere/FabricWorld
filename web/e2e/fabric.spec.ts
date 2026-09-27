@@ -12,7 +12,8 @@ test("mobile photo, dimensions, remnants, history, trash and restore", async ({
     page.getByRole("heading", { name: "我的布料", exact: true }),
   ).toBeVisible();
   await page.getByRole("link", { name: "新增布料", exact: true }).click();
-  await page.getByLabel("布料名称").fill("测试 · 蓝色棉麻 " + Date.now());
+  const name = "测试 · 蓝色棉麻 " + Date.now();
+  await page.getByLabel("布料名称").fill(name);
   await page.getByRole("button", { name: "棉", exact: true }).click();
   await page.getByRole("button", { name: "麻", exact: true }).click();
   await page.getByLabel("布片 1 幅宽", { exact: true }).fill("150");
@@ -42,7 +43,9 @@ test("mobile photo, dimensions, remnants, history, trash and restore", async ({
   });
   await page.getByRole("button", { name: "保存布料", exact: true }).click();
   await expect(page).toHaveURL(/\/fabricworld\/$/);
-  await page.locator(".fabric-card").filter({ has: page.getByRole("heading", { name: /测试 · 蓝色棉麻/ }) }).getByRole("link").click();
+  await page.getByLabel("搜索布料", { exact: true }).fill(name);
+  await page.getByLabel("搜索布料", { exact: true }).press("Enter");
+  await page.locator(".fabric-card").filter({ has: page.getByRole("heading", { name, exact: true }) }).getByRole("link").click();
   await expect(
     page.getByRole("heading", { name: /测试 · 蓝色棉麻/ }),
   ).toBeVisible();
@@ -70,8 +73,10 @@ test("mobile photo, dimensions, remnants, history, trash and restore", async ({
   await page.getByRole("button", { name: "移入回收站", exact: true }).click();
   await page.getByRole("button", { name: "打开菜单", exact: true }).click();
   await page.getByRole("link", { name: "回收站", exact: true }).click();
+  await page.getByLabel("搜索布料", { exact: true }).fill(name);
+  await page.getByLabel("搜索布料", { exact: true }).press("Enter");
   await expect(
-    page.getByRole("heading", { name: /测试 · 蓝色棉麻/ }),
+    page.getByRole("heading", { name, exact: true }),
   ).toBeVisible();
   await page
     .getByRole("button", { name: "恢复布料", exact: true })
@@ -316,6 +321,8 @@ test("reload during a committed write preserves its operation key", async ({
   ).toBeVisible();
   await page.getByRole("button", { name: "查询上次结果" }).click();
   await expect(page).toHaveURL(/\/fabricworld\/$/);
+  await page.getByLabel("搜索布料", { exact: true }).fill(name);
+  await page.getByLabel("搜索布料", { exact: true }).press("Enter");
   await expect(page.locator(".fabric-card").filter({ has: page.getByRole("heading", { name, exact: true }) }).getByRole("link")).toHaveAttribute("href", "/fabricworld/fabrics/" + createdID);
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
   const response = await page.request.get(

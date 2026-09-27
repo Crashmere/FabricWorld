@@ -23,6 +23,25 @@
 | GET /media/{id}/main | 标准 JPEG；仅有效暂存或未删除记录图片 |
 | GET /media/{id}/thumb | WebP 缩略图 |
 
+## 成品接口
+
+| 方法与路径 | 内容 |
+| --- | --- |
+| GET /api/works | items/total/offset/categories；q、category、fabric（来源 ID）、sort(completed/updated/name)、offset、trash=1，每页 24 件 |
+| POST /api/works | 创建完整 Work，名称必填；返回 Work |
+| GET /api/works/{id} | 成品详情，含照片与布料来源可用性 |
+| PUT /api/works/{id} | 完整编辑，提交当前 revision |
+| DELETE /api/works/{id} | body 包含 revision，软删除，返回新版本 |
+| POST /api/works/{id}/restore | body 包含 revision，恢复 30 天内删除的成品 |
+| GET /api/works/{id}/changes | 最近 100 次，含 before/after 成品快照 |
+| GET /api/works/export | format=csv/zip，使用相同搜索/类别/布料筛选，忽略分页并排除回收站 |
+
+Work 包含 name、category、completedDate、pattern、size、recipient、tags、notes、fabrics、photoIds，以及服务端 id/revision/photos/createdAt/updatedAt/deletedAt。名称必填，日期可空，fabrics 为 `{fabricId,name,note,available}` 数组；输入只使用 fabricId 和 note，name 由服务器从来源生成快照，available 为实时读取状态。已用完布料可关联；新关联不能使用已删除或不存在的布料，既有失效关联可继续保留。来源改变不自动更新成品 revision，保存成品不修改库存。
+
+写入使用 Idempotency-Key 和原 operations 查询；revision_conflict、key_reused、deleted、expired、validation 沿用错误格式。成品照片从原 uploads 上传，媒体只能绑定一个成品或布料；删除期间无法通过 media 接口查看，恢复后重新可用。字段上限、页面及迁移见 [WORKS.md](WORKS.md)。
+
+## 布料字段与联动
+
 Fabric 包含 name、materials、materialPercentages、composition、color、tags、status、location、purchaseDate、shop、price、notes、pieces、photoIds。Price 为十进制字符串，空表示未知。Piece 包含 width/length 十进制字符串、unit cm/m、count、irregular、note；widthMM/lengthMM 由服务器重算。只读字段 ID、时间、金额分值等由服务端覆盖，不能用于绕过校验。
 
 materialPercentages 为可选的材质名称 → 十进制字符串映射，例如 `{"棉":"75.1250","麻":"50.5"}`。只保存已选材质的比例；单选固定 100，多选可以留空，不限制各项或总和为 100，不舍入输入。每项最多 20 字符，仅接受非负十进制数字或空串。composition 仍是独立说明文本。旧记录可以没有该字段，旧客户端修改时省略字段会保留仍选中的材质比例；传空对象或空串可明确清空多选比例。CSV 材质列带百分比，ZIP JSON 保留独立映射。
