@@ -56,7 +56,7 @@ Ledger 联动由独立 /api/integrations/ledger 接口接收交易 ID、标题�
 
 网站使用森林绿底的叠放布样图标，以米白、鼠尾草绿和陶土色布片、锯齿裁边、缝线与织纹表达布料。页头与浏览器 SVG 图标共用 `web/public/fabricworld.svg`；ICO 提供 16/32/48 px，Apple Touch 图标为 180 px。修改 SVG 后运行 `npm --prefix web run icons`（使用现有 libvips）重新生成两份位图；资源路径使用 Vite BASE_URL，支持子路径及详情页刷新。`web/index.html` 和 `web/src/App.vue` 的图标 URL 共用 `v=swatches` 版本参数，改版时同步更新以刷新浏览器图标缓存。
 
-拍照 input 使用 capture=environment，相册多选分开。摄像头选择由手机系统决定；HTTP 下不使用 getUserMedia、Service Worker 或离线同步。上传以 XHR 显示进度，失败逐张重试；图片未完成需重试/移除后才能保存。
+拍照 input 使用 capture=environment，相册多选分开。摄像头选择由手机系统决定；应用不使用 getUserMedia、Service Worker 或离线同步。上传以 XHR 显示进度，失败逐张重试；图片未完成需重试/移除后才能保存。
 
 布料与成品的详情、新建和编辑共用 PhotoViewer 大图组件：手机铺满可用视口，桌面仅保留 12 px 外边距。图片初始适应窗口，100% 表示完整显示时的尺寸，可通过加减按钮、滚轮或双指手势放大至 600%；双击切换 200% 与适应窗口，放大后可拖动查看，平移范围限制在图片边缘。聚焦图片区域时，+/- 缩放、方向键平移、0 复位；“适应窗口”按钮随时恢复完整图片。只有图片区域接管触摸缩放和滚轮，不修改浏览器页面缩放；切换照片、更换图片地址或调整窗口大小会复位。详情页保留上一张/下一张。
 

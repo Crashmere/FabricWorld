@@ -1,5 +1,7 @@
 # 安装、运行与恢复
 
+公网入口使用可信 IP 证书的 HTTPS，原有 /fabricworld/ 路径保持。公网 HTTP 返回 308；API 客户端直接使用 HTTPS。Nginx 覆盖 `X-Forwarded-Proto`；写入来源校验只信任来自回环地址的代理头，仍拒绝跨站来源。证书、续期、回退和整机验收见 [共享 HTTPS 运维](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/https.md)（服务器副本 /opt/server-context/references/https.md）。本项目的后端与发布检查保留本机 HTTP，127.0.0.1:80 的代理检查入口不能从公网访问。HTTPS 只加密传输，登录认证尚未接入。
+
 维护前使用 server-operations，显式 `ssh ali 'cat /opt/AGENTS.md'`。共享 Nginx/server-context 不属于本项目。真实主机地址从受信 SSH 配置取得，不写入 public 仓库。
 
 ## 运行布局
