@@ -21,6 +21,9 @@
 * {
   box-sizing: border-box;
 }
+html {
+  scroll-padding-top: 100px;
+}
 body {
   margin: 0;
 }
@@ -143,6 +146,9 @@ img {
   border: 0;
 }
 .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   height: 82px;
   display: flex;
   align-items: center;
@@ -672,7 +678,7 @@ img {
 }
 .photo-column {
   position: sticky;
-  top: 25px;
+  top: 100px;
 }
 .form-panel {
   background: white;
