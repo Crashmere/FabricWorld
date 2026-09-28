@@ -41,10 +41,9 @@
 
 ## 迁移、发布与回退
 
-成品模块已于 2026-09-27 经用户授权完成生产备份、迁移和发布，运行提交为 ae936800。实际验证及 CI 上传超时后的备用发布记录见 [VERIFICATION.md](VERIFICATION.md)。后续涉及数据库结构的生产迁移仍按 server-operations 授权表执行。
+成品模块已于 2026-09-27 经用户授权完成生产备份、迁移和发布，运行提交为 ae936800。后续涉及数据库结构的生产迁移仍按 server-operations 授权表执行。
 
 1. 完成 Go/race/vet、前端类型检查和构建、Chromium/WebKit 业务测试；测试仅使用隔离合成库。
-2. 根据 server-operations 的授权表确认这次生产数据库迁移后，合入并推送 main 触发原 CI and deploy。
 3. 现有发布脚本停止本应用，用旧程序制作数据库与照片备份，再由候选执行 `migrate`、`check`，原子替换并检查健康；无需修改 root 发布脚本、unit 或 Nginx。
 4. 迁移显式、事务化、可重复：创建两张表，按列存在性添加 media.work_id，建立索引、互斥约束和照片保护触发器。保留 application_id 与 user_version=1，不改布料正文或照片文件。check/serve 在缺表/列时拒绝启动，不隐式迁移。
 5. 生产只读核对 `/works`、录入/回收站深链接、API 与原布料库；成功后更新部署验证并运行 `~/agent-config/skills/server-operations/scripts/sync-docs.sh FabricWorld`。

@@ -24,7 +24,7 @@ apt-get --simulate install --no-install-recommends libvips-tools libheif-plugin-
 DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install -y --no-install-recommends libvips-tools libheif-plugin-libde265
 ```
 
-确认包计划后安装；保留主机现有工具，不升级/删除无关服务。CI 或本地 `make linux` 构建，校验产物 SHA-256 后上传隔离暂存目录，管理员执行：
+确认包计划后安装；保留主机现有工具，不升级/删除无关服务。本地 `make linux` 构建，校验产物 SHA-256 后上传隔离暂存目录，管理员执行：
 
 ```sh
 bash deploy/install.sh /path/to/fabricworld-linux-amd64
@@ -42,7 +42,6 @@ Go 使用 go.mod 中的工具链；若本机 goenv 包装器先检查尚未安�
 安装 libvips（macOS 推荐 Homebrew vips），然后：
 
 ```sh
-npm --prefix web ci
 npm --prefix web run build
 go build -o bin/fabricworld ./cmd/fabricworld
 bin/fabricworld init --data .local/dev-data
@@ -53,12 +52,7 @@ bin/fabricworld serve --data .local/dev-data --with-prefix
 
 本地地址为 `http://127.0.0.1:18082/fabricworld/`。日常前端热更新可运行 web 的 npm run dev，API 代理到不带 --with-prefix 的本地后端。测试数据全部在 .local，Git 忽略。
 
-浏览器测试需要 Chromium（本地默认使用已安装 Chrome，可设 PW_CHANNEL=chromium）和 Playwright 官方 WebKit。只跑现有 Chrome 流程可用 `npm --prefix web run test:e2e -- --project=chromium`；完整检查还应运行 webkit-controls、webkit-purchase、webkit-materials、webkit-photos 与 webkit-works。测试浏览器可安装在项目忽略目录：
-
-```sh
-PLAYWRIGHT_BROWSERS_PATH="$PWD/.local/playwright" node web/node_modules/playwright/cli.js install webkit
-PLAYWRIGHT_BROWSERS_PATH="$PWD/.local/playwright" npm --prefix web run test:e2e
-```
+测试浏览器可安装在项目忽略目录：
 
 ## 备份
 
@@ -116,7 +110,7 @@ Ledger 从本机 HTTP 调用 /api/integrations/ledger，默认目标 127.0.0.1:1
 
 ## 成品模块升级
 
-成品使用同一个数据库与 media 目录，无新增运行时、Nginx、unit、端口、权限或备份任务。新增 works/work_changes、media.work_id 及兼容保护需显式迁移；生产授权后走已有 CI 发布脚本的备份 → migrate → check → 启动流程。清理同时覆盖成品回收站与照片。旧程序回退期间仍可读写布料，忽略成品，照片保护触发器阻止旧清理误删成品照片；备份仍覆盖全部媒体。完整步骤与限制见 [WORKS.md](WORKS.md)。
+成品使用同一个数据库与 media 目录，无新增运行时、Nginx、unit、端口、权限或备份任务。新增 works/work_changes、media.work_id 及兼容保护需显式迁移；生产授权后走已有 本机发布脚本的备份 → migrate → check → 启动流程。清理同时覆盖成品回收站与照片。旧程序回退期间仍可读写布料，忽略成品，照片保护触发器阻止旧清理误删成品照片；备份仍覆盖全部媒体。完整步骤与限制见 [WORKS.md](WORKS.md)。
 
 ## 文档同步
 
@@ -124,16 +118,22 @@ Ledger 从本机 HTTP 调用 /api/integrations/ledger，默认目标 127.0.0.1:1
 
 ## ServerPortal 接入材料
 
-`deploy/portal.json` 是本应用资源说明的维护源。CI 使用固定提交的 server-operations 校验器检查，再将同一声明与二进制一同保存为 artifact；发布前执行 `portal-check`，发布后执行 `portal`，通过现有受限 SSH 安装到 `/opt/fabricworld/config/portal.json` 并核对采集器实际加载的 SHA-256。`config/portal-source.json` 记录声明来源提交；它与程序的 current-commit 各自表示不同材料的版本。
+`deploy/portal.json` 是本应用资源说明的维护源。本机发布使用 server-operations 校验器检查，再将同一声明与二进制保存到同一本地版本目录；发布前执行 `portal-check`，发布后执行 `portal`，通过现有受限 SSH 安装到 `/opt/fabricworld/config/portal.json` 并核对采集器实际加载的 SHA-256。`config/portal-source.json` 记录声明来源提交；它与程序的 current-commit 各自表示不同材料的版本。
 
-门户从 `/opt/serverportal/registry.d/fabricworld.json` 的受控链接发现本应用，声明成功更新后自动加载，无需重启。首次正常 CI 发布也会建立链接，无需再编辑门户中央应用列表。普通发布可更新本应用的声明，其他 unit/env/Nginx/发布脚本仍由管理员安装。
+门户从 `/opt/serverportal/registry.d/fabricworld.json` 的受控链接发现本应用，声明成功更新后自动加载，无需重启。首次正常 本机发布也会建立链接，无需再编辑门户中央应用列表。普通发布可更新本应用的声明，其他 unit/env/Nginx/发布脚本仍由管理员安装。
 
-只改门户名称、目录用途、API 说明等元数据时，在 main 上手动运行 CI and deploy，设置 `portal_only=true`；仍执行验证与声明生效检查，但不替换程序、不停止业务服务、不创建发布前数据快照。源码或数据库行为变更不能使用该选项代替程序发布。
+源码或数据库行为变更不能使用该选项代替程序发布。
 
 数据根、媒体、备份格式、unit、端口或访问路径变化时，同一提交维护声明及对应文档，更新共享清单并核对资源覆盖。文件、媒体、数据库表和 systemd 状态由门户自动读取；目录用途、API 说明和权限边界须由维护 agent 明确更新。共同协议、失败处置与新应用接入见 [门户维护](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/portal.md)。
 
-门户 /portal/ 已统一保护公网访问，发布脚本通过回环检查应用健康，CI 公网检查预期未授权返回 401。设备授权永久有效至主动撤销，Cookie 经共享 Nginx 随有效请求续期；本应用若新增 add_header，必须保留共享 Set-Cookie 转发，规则及验收见共享门户维护文档。门户备份使用本应用原生一致性快照；真实完整链恢复验收按用户要求暂缓，不因本次维护自动继续下载或恢复。
+门户 /portal/ 已统一保护公网访问，发布脚本通过回环检查应用健康，本机发布公网检查预期未授权返回 401。设备授权永久有效至主动撤销，Cookie 经共享 Nginx 随有效请求续期；本应用若新增 add_header，必须保留共享 Set-Cookie 转发，规则及验收见共享门户维护文档。门户备份使用本应用原生一致性快照；真实完整链恢复验收按用户要求暂缓，不因本次维护自动继续下载或恢复。
 
 ## 手机桌面图标
 
 现有 /fabricworld/apple-touch-icon.png 为 180×180；Nginx 规则仅放行它与 favicon.ico、fabricworld.svg 的 GET/HEAD，保留版本查询参数。页面、API 和用户媒体继续使用设备认证。共同原因、部署状态与手机验收见[共享排障记录](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#统一认证后-iphone-桌面图标缺失)。
+
+## 当前发布入口
+
+本项目为个人使用：在本地验证本次改动即可发布，不设全量回归门槛，不默认新增或保留永久测试。界面改动检查实际使用的电脑/手机场景；数据迁移、批量写入/删除和备份恢复先用隔离副本针对性验证。
+
+完整流程见 [本机发布与回退](DEPLOYMENT.md)。GitHub 只保存源码；本机 `make release` 构建，`make deploy` 更新生产，文档单独同步。

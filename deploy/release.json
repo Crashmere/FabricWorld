@@ -1,0 +1,11 @@
+{
+  "app": "fabricworld",
+  "build": [
+    "make",
+    "linux"
+  ],
+  "binary": "bin/fabricworld-linux-amd64",
+  "portal": true,
+  "restricted": true,
+  "gzip": false
+}
