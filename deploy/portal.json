@@ -80,7 +80,7 @@
     {
       "method": "GET",
       "path": "/api/fabrics",
-      "description": "items/total/offset/stats；q、status(stock/unused/using/used/all)、material、color、location、tag、min_width/min_length(cm)、sort(purchase/updated/name)、offset、trash=1"
+      "description": "items/total/offset/stats，24 条/页；查询参数 q、status(stock/unused/using/used/all)、material、color、location、tag、min_width/min_length(cm)、sort(purchase/updated/name)、offset、trash=1"
     },
     {
       "method": "POST",
@@ -120,7 +120,7 @@
     {
       "method": "POST",
       "path": "/api/uploads",
-      "description": "multipart 第一个 part 为 file；单文件，返回 Media"
+      "description": "multipart/form-data，第一个 part 为 file；单张最大 25 MiB，成功返回 200 和 Media"
     },
     {
       "method": "GET",
@@ -150,7 +150,7 @@
     {
       "method": "GET",
       "path": "/api/export",
-      "description": "format=csv/zip，与列表筛选相同；默认 stock，禁止回收站导出"
+      "description": "查询参数 format=csv/zip，与列表筛选相同；status 默认 stock，忽略分页与 trash，始终排除回收站"
     },
     {
       "method": "GET",
