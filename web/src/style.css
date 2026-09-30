@@ -59,10 +59,8 @@ button {
 svg {
   flex-shrink: 0;
 }
-button:focus-visible,
-a:focus-visible {
-  outline: 3px solid #95b4a0;
-  outline-offset: 3px;
+:focus {
+  outline: none;
 }
 input,
 textarea,
@@ -77,12 +75,6 @@ select {
   font-size: 16px;
   line-height: 1.4;
   outline: none;
-}
-input:focus,
-textarea:focus,
-select:focus {
-  border-color: #6a927b;
-  box-shadow: 0 0 0 3px #386a5610;
 }
 input::placeholder,
 textarea::placeholder {
@@ -858,9 +850,6 @@ img {
   height: 100%;
   cursor: zoom-in;
 }
-.photo-preview-trigger:focus-visible {
-  outline-offset: -3px;
-}
 .cover-label {
   pointer-events: none;
   position: absolute;
@@ -1050,10 +1039,6 @@ details[open] > summary > svg {
   border: 1px solid #dfe3d9;
   border-radius: 9px;
   background: #fff;
-}
-.date-input:focus-within {
-  border-color: #6a927b;
-  box-shadow: 0 0 0 3px #386a5610;
 }
 .date-input input[type="date"] {
   /* iOS adds padding to a date input's 100% width (WebKit bug 301648).
@@ -2196,7 +2181,6 @@ details[open] > summary > svg {
   -webkit-user-select: none;
   background: #0b120f;
 }
-.photo-viewer-stage:focus-visible { outline: 2px solid #95b4a0; outline-offset: -2px; }
 .photo-viewer-stage.zoomed { cursor: grab; }
 .photo-viewer-stage.zoomed.dragging { cursor: grabbing; }
 .photo-viewer-image {

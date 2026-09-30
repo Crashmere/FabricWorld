@@ -50,7 +50,6 @@ function input(event: Event) {
 }
 function keys(event: KeyboardEvent) {
   if (event.isComposing || unavailable()) return;
-  if (event.key === "Tab") { close(); return; }
   if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key) && (!props.editable || open.value || event.key.startsWith("Arrow"))) {
     event.preventDefault();
     if (!open.value) { show(); if (!props.editable) return; }

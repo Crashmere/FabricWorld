@@ -12,6 +12,7 @@ import WorkDetail from "./pages/WorkDetail.vue";
 import "./style.css";
 import "./works.css";
 import "./controls.css";
+import "./keyboard";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [

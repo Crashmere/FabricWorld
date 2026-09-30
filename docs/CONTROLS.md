@@ -21,7 +21,7 @@
 | 收纳位置、成品类别录入 | 可编辑建议，匹配已有选项，也可直接填写新文本 |
 | 购买日期、完成日期 | 保留原生 date 控件和原有 WebKit 宽度兼容样式；未知日期留空 |
 
-`ChoiceField` 统一单选和输入建议。键盘方向键移动候选，Home / End 到首尾，Enter 确认，Escape 关闭并回到原控件，Tab 保持页面正常顺序。固定选项支持首字查找；可编辑建议不会强制替换自定义文本，中文输入法组合期间不处理确认键。使用 combobox / listbox / option 及展开、选中和活动选项属性。
+`ChoiceField` 统一单选和输入建议。键盘方向键移动候选，Home / End 到首尾，Enter 确认，Escape 关闭并回到原控件。全站由 `web/src/keyboard.ts` 拦截普通 Tab / Shift+Tab，焦点保持在当前控件，包含筛选弹窗与选择面板；Ctrl/Command/Alt 组合及输入法组合输入不拦截。控件无焦点轮廓、聚焦阴影或聚焦变色，候选与已选值的业务提示继续保留，遵循[共享网页键盘与焦点约定](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/conventions.md#网页键盘与焦点)。固定选项支持首字查找；可编辑建议不会强制替换自定义文本，中文输入法组合期间不处理确认键。使用 combobox / listbox / option 及展开、选中和活动选项属性。
 
 `DropdownPanel` 通过手动 popover 提升到浏览器顶层，但面板内容和样式完全由应用绘制。面板保留在组件 DOM 中，筛选弹窗的焦点边界仍有效；依可见空间向上或向下展开，宽度限制在视口内，长选项换行，列表内部滚动。展开前先把控件滚动到可见位置，兼容 WebKit 聚焦屏幕外输入框的时序；滚动、视口和软键盘尺寸变化时重新定位。点击外部、焦点离开或打开另一个选择面板时关闭，Escape 不穿透到外层弹窗。
 

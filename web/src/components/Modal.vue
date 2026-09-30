@@ -8,21 +8,6 @@ let previous: Element | null;
 let scroll = 0;
 function keys(e: KeyboardEvent) {
   if (e.key === "Escape") emit("close");
-  if (e.key === "Tab") {
-    const elements = Array.from(box.value?.querySelectorAll<HTMLElement>(
-      'button,a,input,select,textarea,[tabindex="0"]',
-    ) || []).filter(element => !element.matches(':disabled,[tabindex="-1"]') && element.getClientRects().length);
-    if (!elements?.length) return;
-    const first = elements[0],
-      last = elements[elements.length - 1];
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault();
-      last?.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first?.focus();
-    }
-  }
 }
 onMounted(() => {
   previous = document.activeElement;

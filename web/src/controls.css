@@ -3,7 +3,7 @@
 .choice-trigger { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 48px; padding: 12px 13px; border: 1px solid #dfe3d9; border-radius: 9px; text-align: left; background: #fff; font-size: inherit; line-height: 1.4; transition: border-color 150ms, box-shadow 150ms, background 150ms; }
 .choice-value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .choice-trigger:hover:not(:disabled) { border-color: #9eb39f; background: #fdfefb; }
-.choice-trigger:focus-visible, .choice-trigger[aria-expanded=true] { outline: none; border-color: #6a927b; box-shadow: 0 0 0 3px #386a5610; }
+.choice-trigger[aria-expanded=true] { border-color: #6a927b; }
 .choice-chevron { color: #81947f; transform: rotate(90deg); transition: transform 180ms cubic-bezier(.2,.8,.2,1); }
 .is-open .choice-chevron { transform: rotate(270deg); }
 .choice-anchor > input { margin: 0; padding-right: 44px; }
