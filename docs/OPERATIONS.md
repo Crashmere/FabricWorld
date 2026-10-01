@@ -4,6 +4,8 @@
 
 维护前使用 server-operations，显式 `ssh ali 'cat /opt/AGENTS.md'`。共享 Nginx/server-context 不属于本项目。真实主机地址从受信 SSH 配置取得，不写入 public 仓库。
 
+图片大小：Nginx 请求上限 26 MiB，程序单张图片上限 25 MiB，multipart 开销由入口余量覆盖。超过 1 MiB 的图片若在进入程序前返回 500，见[统一认证误拦大请求](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#统一认证误拦大请求)；共享修正保留本应用的上传限制。
+
 ## 运行布局
 
 - `/opt/fabricworld/bin/fabricworld`：内嵌网页的 Linux amd64 程序。
