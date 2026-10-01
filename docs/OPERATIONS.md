@@ -66,7 +66,7 @@ journalctl -u fabricworld-backup.service -n 50 --no-pager
 runuser -u fabricworld -- /opt/fabricworld/bin/fabricworld backup --data /opt/fabricworld/data --out /opt/fabricworld/backups/manual-UNIQUE
 ```
 
-backup 输出目录必须不存在。锁冲突返回失败，检查日志后重试，不伪造成功。每日任务可用 `systemctl start fabricworld-backup.service` 触发。普通发布另外生成 before-deploy 快照；发布历史和这些快照目前需人工按明确目录保留/清理，不计入 daily 14 份。注意 df/du；本机快照不是异机备份。2026-09-27 已另取一份包含本项目数据库和照片的全应用数据归档，下载到维护电脑并校验，见 [共享备份说明](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/current-state.md#手工数据归档)；当前没有自动异机同步。
+backup 输出目录必须不存在。锁冲突返回失败，检查日志后重试，不伪造成功。每日任务可用 `systemctl start fabricworld-backup.service` 触发。普通发布另外生成 before-deploy 快照；发布历史和这些快照目前需人工按明确目录保留/清理，不计入 daily 14 份。注意 df/du；本机快照不是异机备份。2026-09-27 已另取一份包含本项目数据库和照片的全应用数据归档，下载到维护电脑并校验，见 [共享备份说明](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/current-state.md#手工数据归档)；本应用脚本不主动异机同步；服务器另有阿里云文件备份，范围、30 天保留与恢复限制见[主机云备份](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/current-state.md#云备份)。
 
 ## 隔离恢复与生产恢复
 
