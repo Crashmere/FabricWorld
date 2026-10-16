@@ -1,16 +1,16 @@
-# 项目文档
+# Project Documentation
 
-| 主题 | 文档 |
+| Topic | Document |
 | --- | --- |
-| 架构、数据与图片生命周期 | [ARCHITECTURE.md](ARCHITECTURE.md) |
-| 缝纫成品模块设计与上线步骤 | [WORKS.md](WORKS.md) |
-| 自绘选择控件与顶栏导航 | [CONTROLS.md](CONTROLS.md) |
-| HTTP 接口与错误 | [API.md](API.md) |
-| 安装、备份、恢复与诊断 | [OPERATIONS.md](OPERATIONS.md) |
-| 本机发布与回退 | [DEPLOYMENT.md](DEPLOYMENT.md) |
-| 验证证据与未验证项 | [VERIFICATION.md](VERIFICATION.md) |
-| 已审核设计基线 | [TECHNICAL_PLAN.md](TECHNICAL_PLAN.md) |
+| Architecture, data, and image lifecycle | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| Finished-work module design and rollout steps | [WORKS.md](WORKS.md) |
+| Custom choice controls and top-bar navigation | [CONTROLS.md](CONTROLS.md) |
+| HTTP endpoints and errors | [API.md](API.md) |
+| Installation, backup, recovery, and diagnostics | [OPERATIONS.md](OPERATIONS.md) |
+| Local-machine release and rollback | [DEPLOYMENT.md](DEPLOYMENT.md) |
+| Verification evidence and unverified items | [VERIFICATION.md](VERIFICATION.md) |
+| Reviewed design baseline | [TECHNICAL_PLAN.md](TECHNICAL_PLAN.md) |
 
-共享服务器维护入口为 server-operations，服务器副本 /opt/server-context。共享布料与成品库已接入统一设备认证，授权设备可查看、编辑、删除和导出。
+The shared server-maintenance entry point is `server-operations`; its server copy is at `/opt/server-context`. The shared fabric and finished-work libraries use centralized device authentication, and authorized devices can view, edit, delete, and export.
 
-日常发布与验证按 [本机发布说明](DEPLOYMENT.md) 执行；GitHub 只作源码备份。
+Follow the [local-machine release guide](DEPLOYMENT.md) for routine releases and verification. GitHub is a source-code backup only.

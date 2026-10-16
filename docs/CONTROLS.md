@@ -1,32 +1,32 @@
-# 选择控件与顶栏导航
+# Choice Controls and Top-Bar Navigation
 
-简单下拉选项和输入建议由应用自绘，不使用原生 select 或 datalist。日期、时间等复杂控件保留系统提供的选择器。复用 Vue 和现有 SVG 图标，无新增运行依赖。
+The application draws simple dropdown choices and input suggestions itself instead of using native `select` or `datalist` elements. Complex controls such as dates and times retain system-provided pickers. Reuse Vue and the existing SVG icons; do not add runtime dependencies.
 
-## 顶栏
+## Top Bar
 
-顶栏使用 `sticky; top: 0` 和不透明背景，滚动时留在视口顶部。根滚动区预留 100px 顶部定位空间，桌面照片栏也在 100px 处吸顶，避免被导航遮住。手机视口采用浏览器默认安全区布局，不启用 `viewport-fit=cover`；跨应用代码对照与真机验证边界见 [顶部安全区说明](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#iphone-主屏幕页面顶部发虚)。
+The top bar uses `sticky; top: 0` and an opaque background so that it remains at the top of the viewport while scrolling. The root scroll area reserves 100 px of top positioning space, and the desktop photo rail also becomes sticky at 100 px so that navigation does not cover it. Phone viewports use the browser's default safe-area layout without enabling `viewport-fit=cover`; see the [top safe-area note](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#iphone-主屏幕页面顶部发虚) for cross-application code comparisons and real-device verification boundaries.
 
-布料库与成品集始终位于页面最上方，与应用图标、更多菜单同一行。当前模块用米白色滑块和绿色文字标识，详情、编辑和回收站沿用所属模块的选中状态。更多菜单只包含回收站与材质管理，成品集只有顶栏这一处切换入口。
+The exact UI sections `布料库` and `成品集` always appear at the top of the page on the same row as the application icon and More menu. An ivory slider and green text identify the current module; details, edit, and recycle-bin pages preserve their module's selected state. The More menu contains only the recycle bin and material management. The top bar is the only switch entry for `成品集`.
 
-桌面显示完整品牌文字；760 px 以下保留品牌图标，为两个入口和菜单留出空间。320 px 下仍单行排布，图标链接保留完整的无障碍名称。
+Desktop displays the complete brand text. Below 760 px, only the brand icon remains, leaving room for the two section entries and the menu. The layout stays on one row down to 320 px, and the icon link retains its complete accessible name.
 
-## 控件
+## Controls
 
-| 使用位置 | 行为 |
+| Usage | Behavior |
 | --- | --- |
-| 布料排序与材质、位置、颜色、标签筛选 | 单选列表，选中标记与高亮；原 URL 筛选规则不变 |
-| 布料状态 | 选择已用完仍需确认；取消保持原状态和尺寸 |
-| 布片单位 | cm / m，保留原有毫米精度与数值换算 |
-| 成品类别与排序筛选 | 单选列表，沿用服务端筛选和排序 |
-| 收纳位置、成品类别录入 | 可编辑建议，匹配已有选项，也可直接填写新文本 |
-| 购买日期、完成日期 | 保留原生 date 控件和原有 WebKit 宽度兼容样式；未知日期留空 |
+| Fabric sorting and material, location, color, and tag filters | Single-choice list with a selected marker and highlight; existing URL filter rules remain unchanged |
+| Fabric status | Selecting the used-up state still requires confirmation; canceling preserves the original state and dimensions |
+| Fabric-piece unit | cm / m, preserving the existing millimeter precision and numeric conversion |
+| Finished-work category and sorting filters | Single-choice list using the existing server-side filtering and sorting |
+| Storage-location and finished-work category entry | Editable suggestions that match existing choices while still allowing new text |
+| Purchase date and completion date | Preserve the native `date` control and existing WebKit width-compatibility styling; leave unknown dates empty |
 
-`ChoiceField` 统一单选和输入建议。键盘方向键移动候选，Home / End 到首尾，Enter 确认，Escape 关闭并回到原控件。全站由 `web/src/keyboard.ts` 拦截普通 Tab / Shift+Tab，焦点保持在当前控件，包含筛选弹窗与选择面板；Ctrl/Command/Alt 组合及输入法组合输入不拦截。控件无焦点轮廓、聚焦阴影或聚焦变色，候选与已选值的业务提示继续保留，遵循[共享网页键盘与焦点约定](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/conventions.md#网页键盘与焦点)。固定选项支持首字查找；可编辑建议不会强制替换自定义文本，中文输入法组合期间不处理确认键。使用 combobox / listbox / option 及展开、选中和活动选项属性。
+`ChoiceField` unifies single-choice and input-suggestion behavior. Arrow keys move through candidates, Home / End move to the first or last item, Enter confirms, and Escape closes the panel and returns focus to the original control. `web/src/keyboard.ts` intercepts ordinary Tab / Shift+Tab site-wide so focus remains on the current control, including within filter dialogs and choice panels; it does not intercept Ctrl/Command/Alt combinations or IME composition. Controls have no focus outline, focus shadow, or focus-only color change. Business-state indicators for candidate and selected values remain visible, following the [shared web keyboard and focus conventions](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/conventions.md#网页键盘与焦点). Fixed choices support first-character lookup. Editable suggestions do not forcibly replace custom text, and confirmation keys are ignored during Chinese IME composition. Use `combobox` / `listbox` / `option` semantics and the expanded, selected, and active-option attributes.
 
-`DropdownPanel` 通过手动 popover 提升到浏览器顶层，但面板内容和样式完全由应用绘制。面板保留在组件 DOM 中，筛选弹窗的焦点边界仍有效；依可见空间向上或向下展开，宽度限制在视口内，长选项换行，列表内部滚动。展开前先把控件滚动到可见位置，兼容 WebKit 聚焦屏幕外输入框的时序；滚动、视口和软键盘尺寸变化时重新定位。点击外部、焦点离开或打开另一个选择面板时关闭，Escape 不穿透到外层弹窗。
+`DropdownPanel` uses a manual popover to enter the browser top layer, while the application fully draws its content and styling. The panel remains in the component DOM, so the filter dialog's focus boundary still applies. It opens upward or downward according to available space, constrains its width to the viewport, wraps long options, and scrolls internally. Before opening, it scrolls the control into view to accommodate WebKit's timing when focusing an off-screen input. It repositions when scrolling or when viewport and soft-keyboard dimensions change. Clicking outside, moving focus away, or opening another choice panel closes it. Escape does not propagate to the outer dialog.
 
-## 动画与限制
+## Animation and Limitations
 
-面板使用约 160–180 ms 的淡入与 5 px 位移，箭头旋转，选中对勾轻微缩放；顶栏滑块约 220 ms 平滑移动。退出动画开始后立即把面板标为 inert 并从无障碍树隐藏，避免旧选项在动画期间再次获得焦点。系统设置 prefers-reduced-motion 时移除这些动画。
+The panel uses an approximately 160–180 ms fade with a 5 px translation; the arrow rotates and the selected check mark scales subtly. The top-bar slider moves smoothly over approximately 220 ms. As soon as an exit animation begins, mark the panel inert and hide it from the accessibility tree so stale options cannot regain focus during the animation. Remove these animations when the system setting `prefers-reduced-motion` is active.
 
-实际真机软键盘、系统相机和触屏手感仍需设备验证。
+The real-device soft keyboard, system camera, and touchscreen feel still require device verification.

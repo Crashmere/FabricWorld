@@ -1,31 +1,32 @@
-# FabricWorld 维护入口
+# FabricWorld Maintenance Entry Point
 
-本项目为个人使用：在本地验证本次改动即可发布，不设全量回归门槛，不默认新增或保留永久测试。界面改动检查实际使用的电脑/手机场景；数据迁移、批量写入/删除和备份恢复先用隔离副本针对性验证。
+This project is for personal use: validate each change locally before release; there is no full-regression gate, and permanent tests are neither added nor retained by default. For UI changes, check the computer and phone scenarios that are actually used. Validate data migrations, bulk writes/deletes, and backup recovery with an isolated copy first.
 
-GitHub 只备份源码和配置，推送不触发测试或部署。本机入口及回退见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)；共享流程由 server-operations 维护。
+GitHub backs up source code and configuration only; pushing does not trigger tests or deployment. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the local-machine entry points and rollback procedure. Shared procedures are maintained by `server-operations`.
 
-先读 [docs/README.md](docs/README.md)，按需读取架构、API、运维和本机发布文档。
+Read [docs/README.md](docs/README.md) first, then read the architecture, API, operations, and local-release documentation as needed.
 
-- 共享布料与成品库接入统一设备认证；授权设备可以查看、编辑、删除和导出。首版联网使用，服务器为正式数据源。成品只关联布料来源，余料在布料详情手动更新。
-- Go + Vue + SQLite + libvips。照片与数据库一起备份；不要复制活跃 WAL 主文件，也不要原地覆盖已保存照片。
-- 尺寸统一整数毫米、金额整数分；未知尺寸不能写成 0。余料状态、多组尺寸、图片引用与 revision 必须一致。
-- 简单下拉选项与输入建议使用统一自绘组件；日期、时间等复杂控件保留系统选择器。布料库/成品集只在顶栏切换，不在更多菜单重复入口。交互与动画约定见 docs/CONTROLS.md。
-- 写入必须支持幂等和版本冲突。测试使用隔离合成数据，生产默认只读验收。
-- 真实手机相机未验证时必须如实记录。
-- 部署先使用 server-operations，显式读取 ssh ali 'cat /opt/AGENTS.md'。本项目仅维护自己的 location、unit、数据和发布身份。
-- 更新对应 docs/deploy，新增共享状态同步到 agent-config；推送后运行 agent-config 的 `skills/server-operations/scripts/sync-docs.sh FabricWorld` 同步服务器副本。
-- 哪些事直接做完再告知、哪些先确认，只看 server-operations SKILL.md 的授权表；文档维护与同步不需要事先确认。
-- GitHub 仓库 public。生产地址、照片、数据库、备份、凭据不能入 Git。
+Agent instructions, maintenance documentation, technical plans, handoffs, and similar agent-authored operational documentation default to English unless the user explicitly requests another language. Product and user-facing output follows the requested language. Preserve exact non-English UI labels, matching literals, and quotations when translation would change meaning or behavior.
 
-## 门户资源同步
+- The shared fabric and finished-work libraries use centralized device authentication. Authorized devices can view, edit, delete, and export. The initial version is online-only, and the server is the authoritative data source. A finished work only links to its fabric sources; update remnants manually from the fabric details page.
+- Go + Vue + SQLite + libvips. Back up photos together with the database. Do not copy an active WAL database's main file, and do not overwrite saved photos in place.
+- Store dimensions as integer millimeters and monetary amounts as integer cents. Unknown dimensions must not be written as 0. Remnant status, dimension groups, image references, and `revision` must remain consistent.
+- Use the shared custom component for simple dropdown options and input suggestions. Keep the system picker for complex controls such as dates and times. Switch between the exact UI sections `布料库` and `成品集` only in the top bar; do not duplicate these entries in the More menu. See [docs/CONTROLS.md](docs/CONTROLS.md) for interaction and animation conventions.
+- Writes must support idempotency and version-conflict handling. Tests use isolated synthetic data; production acceptance is read-only by default.
+- Explicitly record when the real phone camera has not been verified.
+- Use `server-operations` before deployment, and explicitly read `ssh ali 'cat /opt/AGENTS.md'`. This project maintains only its own location, units, data, and deployment identity.
+- Update the corresponding `docs` and `deploy` materials. Add new shared state to `agent-config`. After pushing, run `agent-config`'s `skills/server-operations/scripts/sync-docs.sh FabricWorld` to synchronize the server copy.
+- Follow only the authorization table in `server-operations`'s `SKILL.md` to decide which tasks to finish and report afterward and which require confirmation first. Documentation maintenance and synchronization do not require advance confirmation.
+- The GitHub repository is public. Production addresses, photos, databases, backups, and credentials must not enter Git.
 
-- 修改网站图标或认证时，同时核对 iPhone 的 apple-touch-icon、构建后路径及匿名 GET/HEAD；只允许明确的品牌图标/公开 manifest 例外，页面、API 和用户媒体仍须认证。统一排障与验收见 server-operations 的 common-issues；实际启用状态以 current-state 为准。
+## Portal Resource Synchronization
 
-- 本项目的 `deploy/portal.json` 是 ServerPortal 资源声明的维护源，记录目录用途、数据库、运行用户、端口、unit、访问路径、API 与备份类型。新增/迁移/删除数据根、接口或运行材料时，必须同步修改声明、对应 docs 与共享应用清单。
-- 声明部署在 `/opt/fabricworld/config/portal.json`，root 管理；本机发布共用 server-operations 校验器，发布前预检，发布后通过受限 SSH 自动同步并核对门户加载哈希。`registry.d/fabricworld.json` 自动登记链接，更新无需重启门户。
-- 统一认证由共享 Nginx 与门户负责，不在本项目另存设备白名单；本机调用和发布健康检查按共享约定保留。生产已启用设备认证；变更后同步 server-operations current-state。
-- 门户只读展示不替代本项目原生一致性备份；备份格式或媒体生命周期变化时，针对受影响的备份与恢复契约做隔离验证。真实业务数据、凭据和备份仍不得进入 Git。
+- When changing the site icon or authentication, also verify the iPhone `apple-touch-icon`, post-build paths, and anonymous GET/HEAD behavior. Only explicit brand-icon and public-manifest exceptions are allowed; pages, APIs, and user media still require authentication. See `server-operations`'s `common-issues` for shared troubleshooting and acceptance criteria; `current-state` is authoritative for what is actually enabled.
+- This project's `deploy/portal.json` is the maintenance source for ServerPortal's resource declaration. It records directory purposes, databases, runtime user, port, units, access paths, APIs, and backup types. When adding, moving, or deleting a data root, endpoint, or runtime artifact, update the declaration, the corresponding documentation, and the shared application inventory together.
+- The declaration is deployed to `/opt/fabricworld/config/portal.json` and managed by root. Local-machine releases use the shared `server-operations` validator: preflight before release, then synchronize over restricted SSH and verify the portal's loaded hash afterward. `registry.d/fabricworld.json` registers the link automatically; declaration updates do not require a portal restart.
+- Shared Nginx and the portal provide centralized authentication; do not maintain another device allowlist in this project. Preserve the shared conventions for local calls and release health checks. Device authentication is enabled in production; after a change, update `server-operations`'s `current-state`.
+- The portal's read-only display does not replace this project's native consistent backups. When the backup format or media lifecycle changes, validate the affected backup and restore contracts in isolation. Real business data, credentials, and backups must still never enter Git.
 
-本机发布自动预检和同步同提交的 `deploy/portal.json`；仅更新声明运行 `make portal`，保留业务程序版本。
+Local-machine deployment automatically preflights and synchronizes the committed `deploy/portal.json`. To update only the declaration, run `make portal`; this preserves the business-program version.
 
-网页默认拦截 Tab / Shift+Tab 控件切换并取消焦点高亮；只保留用户明确要求的例外。维护与验证按 [server-operations 网页键盘与焦点约定](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/conventions.md#网页键盘与焦点) 执行。
+By default, the web application blocks ordinary Tab / Shift+Tab control traversal and removes focus highlights; preserve only user-requested exceptions. Maintain and verify this behavior according to the [server-operations web keyboard and focus conventions](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/conventions.md#网页键盘与焦点).

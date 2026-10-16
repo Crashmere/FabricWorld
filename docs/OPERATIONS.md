@@ -1,32 +1,32 @@
-# 安装、运行与恢复
+# Installation, Operation, and Recovery
 
-公网入口使用可信 IP 证书的 HTTPS，原有 /fabricworld/ 路径保持。公网 HTTP 返回 308；API 客户端直接使用 HTTPS。Nginx 覆盖 `X-Forwarded-Proto`；写入来源校验只信任来自回环地址的代理头，仍拒绝跨站来源。证书、续期、回退和整机验收见 [共享 HTTPS 运维](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/https.md)（服务器副本 /opt/server-context/references/https.md）。本项目的后端与发布检查保留本机 HTTP，127.0.0.1:80 的代理检查入口不能从公网访问。公网已接入 ServerPortal 统一设备认证：先在 /portal/login 输入口令授权设备，随后使用同源 Secure/HttpOnly Cookie 访问；未授权 API 返回 401。本机发布检查与服务间调用保留。
+The public entry point uses HTTPS with a trusted IP certificate and preserves the existing `/fabricworld/` path. Public HTTP returns 308; API clients should use HTTPS directly. Nginx overwrites `X-Forwarded-Proto`. Write-origin validation trusts proxy headers only from loopback addresses and continues to reject cross-site origins. See [shared HTTPS operations](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/https.md) (server copy: `/opt/server-context/references/https.md`) for certificates, renewal, rollback, and whole-machine acceptance checks. This project's backend and release checks retain local HTTP. The `127.0.0.1:80` proxy-check entry point is not publicly reachable. The public entry point uses ServerPortal's centralized device authentication: first enter the passphrase at `/portal/login` to authorize the device, then use the same-origin Secure/HttpOnly Cookie. Unauthorized API requests return 401. Local release checks and service-to-service calls remain available.
 
-维护前使用 server-operations，显式 `ssh ali 'cat /opt/AGENTS.md'`。共享 Nginx/server-context 不属于本项目。真实主机地址从受信 SSH 配置取得，不写入 public 仓库。
+Before maintenance, use `server-operations` and explicitly run `ssh ali 'cat /opt/AGENTS.md'`. Shared Nginx and `server-context` do not belong to this project. Obtain the real host address from trusted SSH configuration; do not write it into the public repository.
 
-图片大小：Nginx 请求上限 26 MiB，程序单张图片上限 25 MiB，multipart 开销由入口余量覆盖。超过 1 MiB 的图片若在进入程序前返回 500，见[统一认证误拦大请求](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#统一认证误拦大请求)；共享修正保留本应用的上传限制。
+Image-size boundaries: Nginx accepts requests up to 26 MiB, and the program accepts individual images up to 25 MiB; the entry-point margin covers multipart overhead. If an image larger than 1 MiB returns 500 before reaching the program, see [centralized authentication incorrectly blocking large requests](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#统一认证误拦大请求). The shared correction must preserve this application's upload limit.
 
-## 运行布局
+## Runtime Layout
 
-- `/opt/fabricworld/bin/fabricworld`：内嵌网页的 Linux amd64 程序。
-- `/opt/fabricworld/config/`：unit、备份 timer、Nginx location；root 管理。
-- `/opt/fabricworld/data/fabricworld.db`：SQLite；同目录 media/tmp/maintenance.lock。
-- `/opt/fabricworld/backups/`：数据库与媒体快照。
-- `/opt/fabricworld/docs/`、AGENTS.md、docs/SOURCE：已提交文档副本与来源。
-- `/opt/fabricworld/releases/`、current-commit：发布材料与运行提交。
+- `/opt/fabricworld/bin/fabricworld`: Linux amd64 program with the web application embedded.
+- `/opt/fabricworld/config/`: unit, backup timer, and Nginx location; managed by root.
+- `/opt/fabricworld/data/fabricworld.db`: SQLite database; `media/`, `tmp/`, and `maintenance.lock` are in the same directory.
+- `/opt/fabricworld/backups/`: database and media snapshots.
+- `/opt/fabricworld/docs/`, `AGENTS.md`, and `docs/SOURCE`: copies of committed documentation and its source marker.
+- `/opt/fabricworld/releases/` and `current-commit`: release artifacts and the running commit.
 
-运行用户 fabricworld，发布用户 fabricworld-deploy。data/backups 0700，文件 0600；其余目录/程序 root 管理。监听 127.0.0.1:18082，通过 `/fabricworld/` 访问。无需新增云安全组端口。
+The runtime user is `fabricworld`, and the release user is `fabricworld-deploy`. `data`/`backups` are mode 0700 and their files are 0600; root manages the other directories and the program. The service listens on `127.0.0.1:18082` and is accessed through `/fabricworld/`. No cloud-security-group port is added.
 
-## 首次安装
+## First Installation
 
-在已授权的新空目录执行。先检查目录、身份、18082 端口、所有现有应用健康与 Nginx 配置。安装软件遵循 software-installation；Ubuntu 官方源依赖：
+Run this only in an authorized new empty directory. First inspect directories, identities, port 18082, the health of all existing applications, and Nginx configuration. Follow `software-installation` for software installation. Dependencies come from the official Ubuntu repositories:
 
 ```sh
 apt-get --simulate install --no-install-recommends libvips-tools libheif-plugin-libde265
 DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=l apt-get install -y --no-install-recommends libvips-tools libheif-plugin-libde265
 ```
 
-确认包计划后安装；保留主机现有工具，不升级/删除无关服务。本地 `make linux` 构建，校验产物 SHA-256 后上传隔离暂存目录，管理员执行：
+Install only after confirming the package plan. Preserve existing host tools and do not upgrade or remove unrelated services. Build locally with `make linux`, verify the artifact's SHA-256, upload it to an isolated staging directory, and have an administrator run:
 
 ```sh
 bash deploy/install.sh /path/to/fabricworld-linux-amd64
@@ -35,13 +35,13 @@ nginx -t
 systemctl reload nginx
 ```
 
-install 拒绝现有安装，显式初始化空库。接入前必须在隔离测试库完成照片和备份恢复验证；正式库不导入示例数据。新 location 不修改旧应用前缀。检查本地与代理 health、/fabricworld/new 深链接及 assets；复查 Ledger/FeeTable。
+`install` rejects an existing installation and explicitly initializes an empty database. Before integration, complete photo and backup-recovery verification with an isolated test database. Do not import sample data into the production database. The new location must not change old application prefixes. Check local and proxied health, the `/fabricworld/new` deep link, and assets; recheck Ledger and FeeTable.
 
-## 本地开发
+## Local Development
 
-Go 使用 go.mod 中的工具链；若本机 goenv 包装器先检查尚未安装的指定版本，可使用已安装 Go 的 GOTOOLCHAIN=auto 下载/选择项目工具链，不修改系统默认版本。本次环境使用 `GOENV_VERSION=1.24.0 go ...`，实际执行 go1.26.8。
+Go uses the toolchain declared in `go.mod`. If the local goenv wrapper checks for a specified version that is not installed, use the installed Go's `GOTOOLCHAIN=auto` to download or select the project toolchain without changing the system default. In the recorded environment, commands used `GOENV_VERSION=1.24.0 go ...`, which actually ran Go 1.26.8.
 
-安装 libvips（macOS 推荐 Homebrew vips），然后：
+Install libvips (Homebrew `vips` is recommended on macOS), then run:
 
 ```sh
 npm --prefix web run build
@@ -50,15 +50,15 @@ bin/fabricworld init --data .local/dev-data
 bin/fabricworld serve --data .local/dev-data --with-prefix
 ```
 
-升级已有本地数据目录前先备份，再执行 bin/fabricworld migrate --data .local/dev-data；缺少材质目录或成品扩展时 check/serve 会拒绝启动，不能用 init 覆盖已有库。
+Before upgrading an existing local data directory, back it up and then run `bin/fabricworld migrate --data .local/dev-data`. If the material-catalog or finished-work extensions are missing, `check`/`serve` refuse to start; do not overwrite existing data with `init`.
 
-本地地址为 `http://127.0.0.1:18082/fabricworld/`。日常前端热更新可运行 web 的 npm run dev，API 代理到不带 --with-prefix 的本地后端。测试数据全部在 .local，Git 忽略。
+The local URL is `http://127.0.0.1:18082/fabricworld/`. For routine frontend hot reload, run the web project's `npm run dev` and proxy the API to a local backend started without `--with-prefix`. All test data remains under `.local`, which Git ignores.
 
-测试浏览器可安装在项目忽略目录：
+Test browsers may be installed in a project-ignored directory:
 
-## 备份
+## Backups
 
-每天北京时间 03:30 加 0–5 分钟随机延迟，保留 14 份 daily。备份 unit 的可写目录必须是整个 /opt/fabricworld，原因见共享的 [systemd 沙箱下照片硬链接备份失败](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#systemd-沙箱下照片硬链接备份失败)。任务先清理过期回收站/暂存/操作结果，再生成一致性快照和图片硬链接；文件清单含 SHA-256。不要编辑或覆盖快照里的图片，它们与正式不可变图片共享 inode。只有完整备份才有 manifest.json。
+Run daily at 03:30 China Standard Time with 0–5 minutes of randomized delay, retaining 14 daily backups. The backup unit's writable path must cover all of `/opt/fabricworld`; see [photo hard-link backup failure under the systemd sandbox](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#systemd-沙箱下照片硬链接备份失败) for the reason. The task first cleans expired recycle-bin records, staged images, and operation results, then generates a consistent snapshot and image hard links. The file manifest includes SHA-256 hashes. Do not edit or overwrite images inside a snapshot: they share inodes with immutable production images. Only a complete backup has `manifest.json`.
 
 ```sh
 systemctl status fabricworld-backup.timer
@@ -66,11 +66,11 @@ journalctl -u fabricworld-backup.service -n 50 --no-pager
 runuser -u fabricworld -- /opt/fabricworld/bin/fabricworld backup --data /opt/fabricworld/data --out /opt/fabricworld/backups/manual-UNIQUE
 ```
 
-backup 输出目录必须不存在。锁冲突返回失败，检查日志后重试，不伪造成功。每日任务可用 `systemctl start fabricworld-backup.service` 触发。普通发布另外生成 before-deploy 快照；发布历史和这些快照按共享发布保留策略轮换，不计入 daily 14 份。注意 df/du；本机快照不是异机备份。2026-09-27 已另取一份包含本项目数据库和照片的全应用数据归档，下载到维护电脑并校验，见 [共享备份说明](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/current-state.md#手工数据归档)；本应用脚本不主动异机同步；服务器另有阿里云文件备份，范围、30 天保留与恢复限制见[主机云备份](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/current-state.md#云备份)。
+The backup output directory must not exist. A lock conflict is a failure; inspect logs and retry rather than fabricating success. Trigger the daily job manually with `systemctl start fabricworld-backup.service`. An ordinary release also generates a `before-deploy` snapshot. Release history and these snapshots rotate under the shared release-retention policy and do not count toward the 14 daily backups. Monitor `df`/`du`; a local snapshot is not an off-machine backup. On 2026-09-27, a separate all-application data archive containing this project's database and photos was downloaded to the maintenance computer and verified; see the [shared backup notes](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/current-state.md#手工数据归档). This application's scripts do not initiate off-machine synchronization. The server also has Alibaba Cloud file backup; see [host cloud backup](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/current-state.md#云备份) for scope, 30-day retention, and restore limitations.
 
-## 隔离恢复与生产恢复
+## Isolated Recovery and Production Recovery
 
-先核对隔离端口 19082 空闲。18083 已分配给 RecipeBox，不能用作恢复演练监听。
+First confirm that isolated port 19082 is free. Port 18083 is assigned to RecipeBox and must not be used for a recovery rehearsal.
 
 ```sh
 fabricworld restore --source /path/to/backup --out /path/to/new-restore-directory
@@ -79,9 +79,9 @@ fabricworld check --data /path/to/new-restore-directory
 fabricworld serve --data /path/to/new-restore-directory --listen 127.0.0.1:19082 --with-prefix
 ```
 
-restore 验证清单、限制相对路径、复制为独立文件，拒绝已存在的目标。备份源和恢复目标上级目录都须对运行身份可访问。验证照片、封面、回收站、尺寸和记录。生产恢复先确认时点和数据损失，停服务，保留当前数据目录，恢复到独立目录并检查后切换，设置正确所有者，再启动。不能把程序回退当成数据库回退。
+`restore` validates the manifest, restricts relative paths, copies files independently, and rejects an existing target. The runtime identity must be able to access both the backup source's parent and the restore target's parent. Verify photos, covers, recycle-bin records, dimensions, and records. For production recovery, first confirm the restore point and data-loss boundary, stop the service, preserve the current data directory, restore and check into an independent directory, switch directories, set the correct owner, and start the service. Do not treat program rollback as database rollback.
 
-## 诊断与验证
+## Diagnostics and Verification
 
 ```sh
 systemctl status fabricworld fabricworld-backup.timer
@@ -94,52 +94,52 @@ du -sh /opt/fabricworld/data /opt/fabricworld/backups
 vips --version
 ```
 
-常见失败：415 文件类型不支持；422 HEIC 解码或超限；429 图片处理/备份锁/限速；507 磁盘或媒体配额；409 多设备版本冲突。缺库时查目录、权限与备份，不执行 init。
+Common failures: 415 unsupported file type; 422 HEIC decoding failure or limit exceeded; 429 image-processing/backup-lock/rate-limit contention; 507 disk or media quota; 409 multi-device version conflict. When the database is missing, inspect directories, permissions, and backups; do not run `init`.
 
-图片处理支持已验证的 libvips 8.15/8.18，色彩参数使用二者共用的 `--export-profile=srgb`。8.15 不支持新版名称 `--output-profile`；转换失败会在 journal 记录子进程错误，页面返回可读提示。
+Image processing supports the verified libvips 8.15 and 8.18. Color conversion uses the shared `--export-profile=srgb` option. Version 8.15 does not support the newer `--output-profile` name. On conversion failure, the journal records the subprocess error and the page returns a readable message.
 
-## Ledger 联动运行约定
+## Ledger Integration Operating Contract
 
-Ledger 从本机 HTTP 调用 /api/integrations/ledger，默认目标 127.0.0.1:18082；配置归 Ledger 的 LEDGER_FABRICWORLD_URL。FabricWorld 无新增配置、共享数据库或服务依赖；先发布 FabricWorld 接口，再发布 Ledger 弹窗。Nginx、运行身份和权限保持原有配置。
+Ledger calls `/api/integrations/ledger` over local HTTP, targeting `127.0.0.1:18082` by default. Ledger owns the `LEDGER_FABRICWORLD_URL` configuration. FabricWorld adds no configuration, shared database, or service dependency. Release the FabricWorld endpoint before the Ledger dialog. Nginx, runtime identities, and permissions remain unchanged.
 
-每日清理长期保留 fingerprint 以 ledger: 开头的 operations（来源与首次结果），保证跨日重试不重复建布料。该记录与数据库一起备份恢复，不放到浏览器或 Ledger 数据库。旧版清理不认识此保留规则；长期回退旧版前停用联动并核对来源记录。恢复旧备份时需核对备份之后的同步记录，不把程序回退当成数据库恢复。
+Daily cleanup indefinitely retains `operations` whose fingerprint begins with `ledger:`—the source and first result—so cross-day retries do not create duplicate fabrics. These records are backed up and restored with the database and are not stored in the browser or Ledger database. Old cleanup code does not recognize this retention rule; before a long-term rollback to an old version, disable the integration and inspect source records. When restoring an old backup, reconcile synchronization records created after the backup; do not treat program rollback as database recovery.
 
-## 材质字段兼容
+## Material-Field Compatibility
 
-材质百分比作为可选 JSON 字段存入现有 schema v1，无需表结构迁移。新版服务兼容旧客户端省略百分比字段的保存请求；旧版服务不认识该字段，回退后编辑记录会丢失其百分比，回退期间应暂停资料编辑并保留发布前备份。
+Material percentages are stored as an optional JSON field in existing schema v1 and require no table migration. The new service remains compatible with old clients whose save requests omit the percentage field. The old service does not recognize the field; editing a record after rollback loses its percentages. During rollback, pause details editing and preserve the pre-release backup.
 
-独立材质目录使用新增 material_catalog(name,id)，允许零使用名称并持久保存；布料计数仍从当前记录计算。目录扩展创建这张兼容表；完整 migrate 也会补充成品结构，保留 user_version=1 和所有布料/照片数据。首次安装直接建表；旧库发布先用旧程序备份，候选程序 migrate 后再 check（已安装的发布脚本已包含这一步）。移除也更新回收站记录，恢复布料不会重新带回已移除的材质。操作结果保留 7 天，遇到未知结果先用原键查询或重试；集合版本过期时重新核对当前目录。前一版程序可读取扩展后的 v1 数据库，忽略独立目录表；回退期间不会展示零使用名称，但不会清除其持久数据。回退程序不会撤销已完成的批量移除，历史中保留修改前后快照。恢复升级前备份后需显式 migrate 才能启动新版。生产验收只读检查目录、页面及健康，批量写入回归使用隔离合成库。
+The independent material catalog uses the added `material_catalog(name,id)` table, allowing zero-use names to persist. Fabric counts are still calculated from current records. The catalog extension creates this compatible table. A complete `migrate` also adds finished-work structures while preserving `user_version=1` and all fabric/photo data. First installation creates the table directly. When releasing against an old database, use the old program to back it up, then run candidate `migrate` followed by `check` (the installed release script already includes this sequence). Removal also updates recycle-bin records; restoring a fabric does not bring back a removed material. Operation results are retained for seven days. For an unknown result, first query or retry with the original key. If the set version is stale, recheck the current catalog. The preceding program version can read the extended v1 database while ignoring the independent catalog table. During rollback, zero-use names are not displayed, but their persistent data is not cleared. Rollback code does not undo completed bulk removal, and history retains before/after snapshots. After restoring a pre-upgrade backup, explicitly run `migrate` before starting the new version. Production acceptance checks only the catalog, pages, and health in read-only mode; bulk-write regression uses an isolated synthetic database.
 
-## 成品模块升级
+## Finished-Work Module Upgrade
 
-成品使用同一个数据库与 media 目录，无新增运行时、Nginx、unit、端口、权限或备份任务。新增 works/work_changes、media.work_id 及兼容保护需显式迁移；生产授权后走已有 本机发布脚本的备份 → migrate → check → 启动流程。清理同时覆盖成品回收站与照片。旧程序回退期间仍可读写布料，忽略成品，照片保护触发器阻止旧清理误删成品照片；备份仍覆盖全部媒体。完整步骤与限制见 [WORKS.md](WORKS.md)。
+Finished works use the same database and `media` directory. They add no runtime, Nginx configuration, unit, port, permission, or backup task. The added `works`/`work_changes`, `media.work_id`, and compatibility protections require explicit migration. After production authorization, use the existing local-machine release script's backup → `migrate` → `check` → start sequence. Cleanup also covers the finished-work recycle bin and photos. During rollback, the old program can still read and write fabrics while ignoring finished works. Photo-protection triggers prevent old cleanup from deleting finished-work photos, and backups still cover all media. See [WORKS.md](WORKS.md) for the complete procedure and limitations.
 
-## 文档同步
+## Documentation Synchronization
 
-文档提交推送后运行 `~/agent-config/skills/server-operations/scripts/sync-docs.sh FabricWorld`，它负责漂移检查、安装到 /opt/fabricworld、逐文件校验、docs/SOURCE 和清理（用法见 server-operations 的 maintenance）。共享清单改动后不带参数运行同一脚本，同时同步 /opt/server-context 与 /opt/AGENTS.md。
+After committing and pushing documentation, run `~/agent-config/skills/server-operations/scripts/sync-docs.sh FabricWorld`. It handles drift checks, installation under `/opt/fabricworld`, per-file verification, `docs/SOURCE`, and cleanup; see `server-operations` maintenance documentation for usage. After a shared-inventory change, run the same script without arguments to synchronize `/opt/server-context` and `/opt/AGENTS.md` as well.
 
-## ServerPortal 接入材料
+## ServerPortal Integration Materials
 
-`deploy/portal.json` 是本应用资源说明的维护源。本机发布使用 server-operations 校验器检查，再将同一声明与二进制保存到同一本地版本目录；发布前执行 `portal-check`，发布后执行 `portal`，通过现有受限 SSH 安装到 `/opt/fabricworld/config/portal.json` 并核对采集器实际加载的 SHA-256。`config/portal-source.json` 记录声明来源提交；它与程序的 current-commit 各自表示不同材料的版本。
+`deploy/portal.json` is this application's maintenance source for its resource declaration. Local-machine release uses the `server-operations` validator and saves the same declaration and binary in the same local version directory. It runs `portal-check` before release and `portal` afterward, installs the declaration at `/opt/fabricworld/config/portal.json` through existing restricted SSH, and verifies the SHA-256 actually loaded by the collector. `config/portal-source.json` records the declaration's source commit; it and the program's `current-commit` represent versions of different artifacts.
 
-门户从 `/opt/serverportal/registry.d/fabricworld.json` 的受控链接发现本应用，声明成功更新后自动加载，无需重启。首次正常 本机发布也会建立链接，无需再编辑门户中央应用列表。普通发布可更新本应用的声明，其他 unit/env/Nginx/发布脚本仍由管理员安装。
+The portal discovers this application through the controlled link `/opt/serverportal/registry.d/fabricworld.json`. It automatically loads a successfully updated declaration without a restart. The first normal local-machine release also creates the link, so the portal's central application list does not need another edit. Ordinary releases may update this application's declaration; administrators still install other units, environment settings, Nginx configuration, and release scripts.
 
-源码或数据库行为变更不能使用该选项代替程序发布。
+Source-code or database-behavior changes cannot use this option instead of a program release.
 
-数据根、媒体、备份格式、unit、端口或访问路径变化时，同一提交维护声明及对应文档，更新共享清单并核对资源覆盖。文件、媒体、数据库表和 systemd 状态由门户自动读取；目录用途、API 说明和权限边界须由维护 agent 明确更新。共同协议、失败处置与新应用接入见 [门户维护](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/portal.md)。
+When a data root, media behavior, backup format, unit, port, or access path changes, maintain the declaration and corresponding documentation in the same commit, update the shared inventory, and verify resource coverage. The portal automatically reads files, media, database tables, and systemd state. The maintenance agent must explicitly update directory purposes, API descriptions, and permission boundaries. See [portal maintenance](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/portal.md) for the shared protocol, failure handling, and new-application integration.
 
-门户 /portal/ 已统一保护公网访问，发布脚本通过回环检查应用健康，本机发布公网检查预期未授权返回 401。设备授权永久有效至主动撤销，Cookie 经共享 Nginx 随有效请求续期；本应用若新增 add_header，必须保留共享 Set-Cookie 转发，规则及验收见共享门户维护文档。门户备份使用本应用原生一致性快照；真实完整链恢复验收按用户要求暂缓，不因本次维护自动继续下载或恢复。
+The portal at `/portal/` centrally protects public access. The release script checks application health over loopback, and a local-machine release expects an unauthorized public check to return 401. Device authorization remains valid until explicit revocation, and shared Nginx renews the Cookie on valid requests. If this application adds `add_header`, it must preserve shared `Set-Cookie` forwarding; see the shared portal-maintenance documentation for rules and acceptance criteria. Portal backup uses this application's native consistent snapshot. Per user request, full end-to-end restore acceptance is deferred; this maintenance does not automatically resume a download or restore.
 
-## 手机桌面图标
+## Phone Home-Screen Icon
 
-现有 /fabricworld/apple-touch-icon.png 为 180×180；Nginx 规则仅放行它与 favicon.ico、fabricworld.svg 的 GET/HEAD，保留版本查询参数。页面、API 和用户媒体继续使用设备认证。共同原因、部署状态与手机验收见[共享排障记录](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#统一认证后-iphone-桌面图标缺失)。
+The existing `/fabricworld/apple-touch-icon.png` is 180×180. Nginx allows anonymous GET/HEAD only for it, `favicon.ico`, and `fabricworld.svg`, preserving version query parameters. Pages, APIs, and user media continue to use device authentication. See the [shared troubleshooting record](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#统一认证后-iphone-桌面图标缺失) for the common reason, deployment state, and phone acceptance checks.
 
-## 当前发布入口
+## Current Release Entry Point
 
-本项目为个人使用：在本地验证本次改动即可发布，不设全量回归门槛，不默认新增或保留永久测试。界面改动检查实际使用的电脑/手机场景；数据迁移、批量写入/删除和备份恢复先用隔离副本针对性验证。
+This project is for personal use: validate each change locally before release; there is no full-regression gate, and permanent tests are neither added nor retained by default. For UI changes, check the computer and phone scenarios that are actually used. Validate data migrations, bulk writes/deletes, and backup recovery with an isolated copy first.
 
-完整流程见 [本机发布与回退](DEPLOYMENT.md)。GitHub 只保存源码；本机 `make release` 构建，`make deploy` 更新生产，文档单独同步。
+See [Local-Machine Release and Rollback](DEPLOYMENT.md) for the complete flow. GitHub stores source code only. Locally, `make release` builds and `make deploy` updates production; documentation synchronizes separately.
 
-## 发布材料自动清理
+## Automatic Release-Artifact Cleanup
 
-服务器每天北京时间 05:00 按[发布材料自动保留](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/retention.md)保留最近 3 次成功发布、最近 5 份完整发布前备份，并保护当前版本、对应备份和待核对失败批次。共享实现、锁、回执、预览及停用命令由 server-operations 维护；本项目 deploy 保留发布脚本的 recovery 标记和每日备份的 flock 入口。首次安装先按共享文档建立 /run/lock/ali-release-retention.lock，再启用 backup timer。daily、manual、业务数据、门户 exports 和维护电脑构建材料不在此自动清理范围。
+Every day at 05:00 China Standard Time, the server follows [automatic release-artifact retention](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/retention.md) to keep the latest three successful releases and the latest five complete pre-release backups, while protecting the current version, its corresponding backup, and failed batches awaiting review. `server-operations` owns the shared implementation, lock, receipts, preview, and disable commands. This project's deployment retains the release script's `recovery` markers and the daily backup's `flock` entry point. On first installation, create `/run/lock/ali-release-retention.lock` according to the shared documentation before enabling the backup timer. Daily and manual backups, business data, portal exports, and maintenance-computer build artifacts are outside this automatic cleanup scope.

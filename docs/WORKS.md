@@ -1,53 +1,53 @@
-# 缝纫成品模块
+# Finished Sewing Works Module
 
-## 目标与范围
+## Goals and Scope
 
-记录已经完成的缝纫作品，让照片、纸样、调整经验和所用布料可以一起查找。延续共享库模式，公网接入统一设备认证；成品与布料共用原服务、数据库、照片处理和备份，不新增运行依赖、端口或共享配置。
+Record completed sewing projects so their photos, patterns, adjustment notes, and source fabrics can be found together. Preserve the shared-library model and centralized device authentication for public access. Finished works and fabrics share the existing service, database, image processing, and backup system; no runtime dependency, port, or shared configuration is added.
 
-| 信息 | 规则 |
+| Information | Rule |
 | --- | --- |
-| 成品名称 | 必填，1–200 字符 |
-| 照片 | 可稍后补充，最多 10 张，第一张封面，可排序、移除、大图缩放；每张不超过 25 MiB |
-| 类别 | 可选，最多 40 字符，提供常用选项并允许自定义 |
-| 完成日期 | 可选，1900–2200 年有效日期；未知留空 |
-| 纸样 / 教程 | 可选，300 字符，用于名称、编号或出处；作为纯文本显示 |
-| 尺码、为谁制作 | 各最多 80 字符 |
-| 标签 | 最多 20 个，每个 40 字符，去重 |
-| 制作心得 | 8000 字符，保留换行，可记录工艺、调整、复盘 |
-| 关联布料 | 最多 20 块，可选在库或已用完布料；各附 300 字符用布说明 |
+| Work name | Required, 1–200 characters |
+| Photos | May be added later; up to 10 photos, with the first used as the cover; support reordering, removal, and zoomed viewing; no more than 25 MiB each |
+| Category | Optional, up to 40 characters; offer common choices and allow custom values |
+| Completion date | Optional; valid date from 1900 through 2200; leave empty when unknown |
+| Pattern / tutorial | Optional, 300 characters, for a name, number, or source; displayed as plain text |
+| Size and recipient | Up to 80 characters each |
+| Tags | Up to 20, each no more than 40 characters; deduplicated |
+| Making notes | 8,000 characters; preserve line breaks; may record techniques, adjustments, and retrospectives |
+| Linked fabrics | Up to 20; fabrics may be in stock or used up; each link may have a 300-character usage note |
 
-关联仅记录来源，一件成品可使用多块布料，一块布料可用于多件成品。裁剪形状、方向和余料组合不能从“用了多少米”可靠推导，所以保存成品不改变布料的 revision、状态、尺寸或购买金额。详情提供布料入口，使用者在原余料流程填写真实剩余尺寸。用布说明是文字记录，不参与数值库存计算。当前范围不含在制任务、自动扣料、成本摊销、教程采集或进度管理。
+Links record provenance only. One finished work may use multiple fabrics, and one fabric may be used by multiple works. Cutting shape, grain direction, and remnant combinations cannot be derived reliably from “how many meters were used,” so saving a work does not change a fabric's `revision`, status, dimensions, or purchase amount. The details page links to the fabric; the user records its actual remaining dimensions through the existing remnant flow. Fabric-usage notes are textual records and do not participate in numeric inventory calculations. The current scope excludes works in progress, automatic material deductions, cost allocation, tutorial collection, and progress management.
 
-## 页面与操作
+## Pages and Operations
 
-- 所有页面的顶栏提供布料库/成品集切换，与应用图标同一行；菜单不重复成品集入口。
-- `/works`：照片卡片，服务端搜索名称/类别/纸样/尺码/制作对象/标签/心得/关联布料，按类别或布料筛选；每页 24 件，支持加载更多。默认最近完成，空日期使用录入日期；可切换最近修改或名称排序。筛选存入 URL。
-- `/works/new`、`/works/:id/edit`：名称为唯一必填项，照片独立上传，表单按作品资料、所用布料、制作心得分组。`?fabric=:id` 预选来源，布料详情的“记录成品”使用此入口。
-- `/works/:id`：完整照片、纸样尺码、所用布料与心得，编辑、修改历史、删除入口。从布料详情可以反向查看相关成品。
-- `/works/trash`：30 天软删除与恢复，与布料回收站通过分类入口切换。删除成品不删除来源布料，恢复保留原照片顺序和关联。
-- CSV 和 ZIP 导出遵循当前搜索和筛选，排除回收站；ZIP 包含 `works.json` 与成品主图。不是备份恢复格式。
+- Every page's top bar switches between the exact UI sections `布料库` and `成品集`, on the same row as the application icon. The menu does not duplicate the `成品集` entry.
+- `/works`: photo cards with server-side search across name, category, pattern, size, recipient, tags, notes, and linked fabrics; filter by category or fabric. It shows 24 works per page and supports loading more. The default is most recently completed, using the entry date when the completion date is empty; users can instead sort by most recently modified or by name. Filters are stored in the URL.
+- `/works/new` and `/works/:id/edit`: name is the only required field, photos upload independently, and the form groups work details, fabrics used, and making notes. `?fabric=:id` preselects a source. The fabric details action `记录成品` uses this entry point.
+- `/works/:id`: complete photos, pattern and size, fabrics used, and notes, with edit, change-history, and delete entry points. Related finished works can be viewed in reverse from fabric details.
+- `/works/trash`: 30-day soft deletion and restoration, switched alongside the fabric recycle bin through category entries. Deleting a work does not delete source fabrics; restoring it preserves the original photo order and links.
+- CSV and ZIP exports follow the current search and filters and exclude the recycle bin. ZIP includes `works.json` and the finished works' main images. It is not a backup-and-restore format.
 
-桌面编辑器照片和字段分列，手机顺序排布，保存按钮固定在底部；日期保留系统选择器及 date-input 容器，类别录入及筛选使用 ChoiceField，320 px 长名称、标签和说明可换行。照片沿用 PhotoViewer。真实手机拍照与系统相册行为仍需实机验证。
+On desktop, the editor places photos and fields in columns. On phones, it lays them out sequentially and fixes the Save button at the bottom. Dates retain the system picker and `date-input` container. Category entry and filtering use `ChoiceField`. Long names, tags, and notes wrap at 320 px. Photos continue to use `PhotoViewer`. Real-phone camera and system photo-library behavior still require device verification.
 
-## 数据与一致性
+## Data and Consistency
 
-新增 `works` 与 `work_changes`，格式为有界 JSON 加 revision、时间和软删除列。`media` 增加可空 `work_id` 外键，与 `fabric_id` 互斥；成品和布料各自上传照片，不能复用另一条记录已绑定的图片。上传、图片配额、锁、缩略图转换、移除后的保留期与布料共用。
+Add `works` and `work_changes`, represented as bounded JSON plus `revision`, timestamps, and soft-delete columns. Add a nullable `work_id` foreign key to `media`, mutually exclusive with `fabric_id`. Finished works and fabrics upload their own photos; an image already bound to one record cannot be reused by another. Upload behavior, image quotas, locking, thumbnail conversion, and the retention period after removal are shared with fabrics.
 
-布料关联保存在成品 JSON 中，由服务器生成名称快照，不接受客户端伪造的名称。读取时能访问的布料显示当前名称；删除或永久清理后仍显示历史名称并标明来源不可用。已存在的失效关联可保留或移除，新建关联只接受未删除布料；已用完可关联。删除布料不会级联删除成品或历史。
+Fabric links are stored in the work's JSON. The server generates the name snapshot and does not accept a client-forged name. When the linked fabric is accessible, reads display its current name; after deletion or permanent cleanup, reads still display the historical name and mark the source unavailable. Existing invalid links may be kept or removed. New links accept only non-deleted fabrics; used-up fabrics are allowed. Deleting a fabric does not cascade to finished works or their history.
 
-每次新增、编辑、删除和恢复均在同一事务内完成记录、照片归属、历史快照与 operations 写入。所有写请求使用原有 32 位幂等键；编辑/删除/恢复检查 revision。历史最多查询最近 100 次。用户数据均以纯文本展示，来源检查与限速沿用原接口。
+Every create, edit, delete, and restore transaction writes the record, photo ownership, history snapshot, and `operations` result atomically. All writes use the existing 32-character idempotency key; edit/delete/restore operations check `revision`. History queries return at most the latest 100 changes. All user data is rendered as plain text, and the existing origin checks and rate limits apply.
 
-成品草稿与布料草稿独立保存在 sessionStorage，普通草稿保留 24 小时，未上传的 File 刷新后需重选。提交前保存请求正文、幂等键和发送时刻；刷新先查 operations，再比较编辑 revision。结果未知时只能查询或按原正文原键重试；超过 7 天的未知提交禁止重发，要求先人工核对。冲突保留输入，展示最新记录，用户核对后才可使用最新 revision 重新提交。删除/恢复的未知提交也保存原键，支持刷新查询。
+Finished-work drafts and fabric drafts are stored independently in `sessionStorage`. Ordinary drafts remain for 24 hours; an unuploaded `File` must be selected again after refresh. Before submission, store the request body, idempotency key, and send time. After refresh, query `operations` before comparing the edit `revision`. If the result is unknown, only query it or retry the identical body with the original key. Do not resend an unknown submission after seven days; require manual review first. On conflict, preserve the input and show the latest record. Only after the user reviews it may the current `revision` be used for another submission. Unknown delete/restore submissions also retain the original key and support lookup after refresh.
 
-## 迁移、发布与回退
+## Migration, Release, and Rollback
 
-成品模块已于 2026-09-27 经用户授权完成生产备份、迁移和发布，运行提交为 ae936800。后续涉及数据库结构的生产迁移仍按 server-operations 授权表执行。
+On 2026-09-27, with user authorization, the finished-work module completed its production backup, migration, and release. The running commit was `ae936800`. Future production migrations involving database structure still follow the `server-operations` authorization table.
 
-1. 完成 Go/race/vet、前端类型检查和构建、Chromium/WebKit 业务测试；测试仅使用隔离合成库。
-3. 现有发布脚本停止本应用，用旧程序制作数据库与照片备份，再由候选执行 `migrate`、`check`，原子替换并检查健康；无需修改 root 发布脚本、unit 或 Nginx。
-4. 迁移显式、事务化、可重复：创建两张表，按列存在性添加 media.work_id，建立索引、互斥约束和照片保护触发器。保留 application_id 与 user_version=1，不改布料正文或照片文件。check/serve 在缺表/列时拒绝启动，不隐式迁移。
-5. 生产只读核对 `/works`、录入/回收站深链接、API 与原布料库；成功后更新部署验证并运行 `~/agent-config/skills/server-operations/scripts/sync-docs.sh FabricWorld`。
+1. Complete Go/race/vet checks, frontend type checking and build, and Chromium/WebKit business-flow tests. Tests use only an isolated synthetic database.
+3. The existing release script stops this application, uses the old program to back up the database and photos, then runs the candidate's `migrate` and `check` commands, atomically replaces the program, and checks health. No change to the root-owned release script, unit, or Nginx is required.
+4. Migration is explicit, transactional, and repeatable: create the two tables; add `media.work_id` according to column existence; and create the indexes, mutual-exclusion constraint, and photo-protection triggers. Preserve `application_id` and `user_version=1`; do not change fabric bodies or photo files. `check` and `serve` refuse to start when tables or columns are missing; they do not migrate implicitly.
+5. In production, perform read-only checks of `/works`, create/recycle-bin deep links, the API, and the original fabric library. After success, update deployment verification and run `~/agent-config/skills/server-operations/scripts/sync-docs.sh FabricWorld`.
 
-候选失败仍由原发布脚本恢复旧程序，不自动回滚数据库。旧程序可读取兼容扩展后的布料，忽略成品页面和记录；旧备份枚举全部 media，仍包含成品照片。`protect_work_media` 防止旧清理逻辑将 fabric_id 为空的已绑定成品照片当成过期上传误删；照片所有者互斥约束防止旧程序将成品照片占用到布料。回退不会撤销已提交的成品数据；成品管理与过期成品清理需恢复新版后继续。早于其他已有功能的长期回退还需遵守 [OPERATIONS.md](OPERATIONS.md) 的材质和 Ledger 兼容限制。
+If the candidate fails, the original release script restores the old program but does not automatically roll back the database. The old program can read the compatibly extended fabric data while ignoring finished-work pages and records. Old backups enumerate all `media` and therefore still include finished-work photos. `protect_work_media` prevents old cleanup logic from mistaking a bound finished-work photo with a null `fabric_id` for an expired upload. The photo-owner mutual-exclusion constraint prevents the old program from assigning a finished-work photo to a fabric. Rollback does not undo committed finished-work data; finished-work management and expired-work cleanup resume only after the new version is restored. A long-term rollback to a version predating other existing features must also follow the material and Ledger compatibility limits in [OPERATIONS.md](OPERATIONS.md).
 
-新版备份自动覆盖成品、历史和照片，不增加独立备份任务。恢复升级前备份后运行 migrate，再 check；恢复生产时点仍需明确授权。
+New-version backups automatically cover finished works, history, and photos; they do not add a separate backup task. After restoring a pre-upgrade backup, run `migrate` and then `check`. Restoring production to a selected point in time still requires explicit authorization.

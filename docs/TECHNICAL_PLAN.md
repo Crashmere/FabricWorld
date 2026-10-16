@@ -1,341 +1,341 @@
-# FabricWorld 技术方案
+# FabricWorld Technical Plan
 
-状态：已审核设计基线，核心实现及首次安装已完成。日期：2026-09-19。以下描述规划时的取舍，当前实现与验证以 ARCHITECTURE、OPERATIONS 和 VERIFICATION 为准。
+Status: reviewed design baseline; core implementation and first installation are complete. Date: 2026-09-19. The sections below describe the tradeoffs made during planning. For current implementation and verification, defer to [ARCHITECTURE.md](ARCHITECTURE.md), [OPERATIONS.md](OPERATIONS.md), and [VERIFICATION.md](VERIFICATION.md).
 
-本方案为用户已审核的设计基线；随后明确 GitHub 仓库使用 public。文中的性能指标仍是目标，是否达成以验收文档为准。
+This plan is the design baseline reviewed by the user. The GitHub repository was subsequently confirmed as public. Performance figures in this document remain targets; the acceptance documentation determines whether they were achieved.
 
-后续成品记录模块的设计见 [WORKS.md](WORKS.md)：已完成作品集、纸样心得与布料来源关联；余料仍在布料详情手动更新。
+See [WORKS.md](WORKS.md) for the later finished-work record module: a completed-work collection, pattern and making notes, and source-fabric links. Remnants are still updated manually from fabric details.
 
-## 1. 推荐方案与审核项
+## 1. Recommended Plan and Review Items
 
-将 FabricWorld 做成一个以照片为主的布料收藏工具：打开就能看到已有布料，拍照后可立即保存，再按需补齐材质、尺寸、收纳位置和购买信息；使用布料后能更新余料，购物时能快速判断家里有没有相似材料。
+Build FabricWorld as a photo-first fabric collection tool: opening it immediately shows existing fabrics; a photo can be saved at once, with material, dimensions, storage location, and purchase information completed later as needed. After using fabric, the user can update the remnant. While shopping, the user can quickly determine whether similar material is already at home.
 
-推荐技术路线：**Vue 3 + TypeScript + Go + SQLite + 本地图片文件**。沿用 ali 的 Nginx、systemd 和子路径部署方式，新增图片处理工具 libvips 及 HEIC 解码依赖。前端构建产物嵌入 Go 程序，服务器不运行前端构建或 Node 应用。
+Recommended stack: **Vue 3 + TypeScript + Go + SQLite + local image files**. Reuse ali's Nginx, systemd, and subpath deployment model, adding libvips plus a HEIC-decoding dependency. Embed the frontend build in the Go program; do not run a frontend build or Node application on the server.
 
-| 决策 | 本方案建议 | 对使用的影响 |
+| Decision | Recommendation in this plan | User impact |
 | --- | --- | --- |
-| 使用范围（已确认） | 一个共享布料库；同一网址、所有设备看到同一份数据 | 统一设备认证，没有个人数据隔离；授权设备可查看、上传、修改和删除 |
-| 首版重点 | 照片入库、材质尺寸、搜索筛选、收纳位置、余料、回收站、导出 | 覆盖买入、查找、使用和找回误删记录 |
-| 网络入口 | 先复用 HTTP 的 `/fabricworld/`，通过系统文件选择器拍照 | 以实机验证拍照兼容性；不把完整 PWA 和网页相机预览列入 HTTP 版承诺 |
-| 照片保存 | 保存清理过元数据、最长边 2560 px 的标准照片及缩略图 | 控制空间和加载速度；导出的是处理后的照片，不是原始摄影文件 |
-| 部署 | 独立服务、数据库、数据目录与发布身份；图片本地存储 | 暂不引入对象存储费用或额外数据库服务 |
-| GitHub | `Crashmere/FabricWorld`，可见性 public（已确认） | 在审核通过、进入实施阶段时创建；公开源码可单独调整 |
+| Usage scope (confirmed) | One shared fabric library; the same URL and same data on every device | Centralized device authentication, with no personal data partitioning; authorized devices can view, upload, modify, and delete |
+| Initial-release priorities | Photo intake, materials and dimensions, search and filters, storage location, remnants, recycle bin, and export | Covers acquisition, finding, use, and recovery of accidentally deleted records |
+| Network entry point | Initially reuse HTTP at `/fabricworld/` and take photos through the system file picker | Verify photo compatibility on real devices; do not promise a complete PWA or in-page camera preview for the HTTP version |
+| Photo storage | Store metadata-cleaned standard photos with a maximum long edge of 2560 px plus thumbnails | Controls space and loading time; exports contain processed photos rather than original camera files |
+| Deployment | Independent service, database, data directory, and release identity; store images locally | Avoids object-storage costs and an additional database service for now |
+| GitHub | `Crashmere/FabricWorld`, visibility public (confirmed) | Create after review approval when implementation begins; source visibility can be adjusted separately |
 
-用户已明确不设置登录与身份认证，并在本轮确认“共享布料库，持有网址的人可查看和编辑”。本方案不引入密码、访问令牌或账号，也不做个人数据隔离；该项已经确认，无需重复审核。
+At this planning stage, the user explicitly requested no login or identity authentication and confirmed “a shared fabric library that anyone holding the URL can view and edit.” This plan therefore introduced no password, access token, or account and did not partition personal data. That item was confirmed and did not require another review.
 
-## 2. 已核对的环境与约束
+## 2. Verified Environment and Constraints
 
-2026-09-19 通过本地检查、受信 SSH 别名 `ali` 和 GitHub 只读接口核对：
+Verified on 2026-09-19 through local checks, the trusted SSH alias `ali`, and GitHub read-only interfaces:
 
-- 开始规划时当前目录为空；实施后已建立 `Crashmere/FabricWorld` public 仓库。
-- 显式读取了服务器 `/opt/AGENTS.md`；远端四份共享运维参考文档与本地维护源的 SHA-256 一致。
-- ali 为 2 vCPU、约 1.7 GiB 内存；核对时可用内存约 1.25 GiB，无 swap；40 GiB 根盘约有 33 GiB 可用。资源余量不是容量保证。
-- Nginx 当前仅配置 HTTP 80，以路径分发应用；Ledger 使用 `127.0.0.1:18080`，FeeTable 使用 `127.0.0.1:18081`。两个服务与 Nginx 均 active，代理健康接口均成功。
-- `18082` 未监听，`/opt/fabricworld` 尚不存在。它们只是候选值，部署前重新确认占用。
-- Ubuntu 已配置的软件源中有 `libvips-tools` 与 `libheif-plugin-libde265` 候选包，当前未安装；已安装 `libheif1`。有候选包不等于已经验证 HEIC 解码。
+- At the start of planning, the current directory was empty. Implementation later established the public `Crashmere/FabricWorld` repository.
+- The server's `/opt/AGENTS.md` was read explicitly. The SHA-256 hashes of four shared remote operations references matched their local maintenance sources.
+- ali had 2 vCPUs and approximately 1.7 GiB of memory; about 1.25 GiB was available at inspection time, with no swap. Its 40 GiB root disk had approximately 33 GiB free. This resource headroom is not a capacity guarantee.
+- Nginx was configured only for HTTP port 80 and dispatched applications by path. Ledger used `127.0.0.1:18080`; FeeTable used `127.0.0.1:18081`. Both services and Nginx were active, and both proxied health endpoints succeeded.
+- Nothing was listening on `18082`, and `/opt/fabricworld` did not exist. These were only candidate values and had to be rechecked before deployment.
+- The configured Ubuntu repositories offered candidate packages for `libvips-tools` and `libheif-plugin-libde265`, neither then installed; `libheif1` was installed. Package availability did not mean HEIC decoding had been verified.
 
-服务器共享约定由 `agent-config/skills/server-operations` 维护。本项目只拥有自己的应用配置。生产地址、密钥、真实照片、数据库和备份不写入 Git。
+Shared server conventions are maintained by `agent-config/skills/server-operations`. This project owns only its own application configuration. Production addresses, keys, real photos, databases, and backups do not enter Git.
 
-## 3. 首版产品范围
+## 3. Initial Product Scope
 
-### 3.1 布料记录
+### 3.1 Fabric Records
 
-一条记录表示同一次购入、准备放在一起管理的一种布料；同款再次购买可以复制基础信息后另建记录。复制操作不复制照片文件引用、购买日期或余料，避免两批库存混在一起。
+One record represents one kind of fabric acquired together and intended to be managed as one batch. A repeat purchase of the same fabric may copy basic information into a new record. Copying does not copy photo references, purchase date, or remnants, avoiding accidental mixing of separate batches.
 
-| 信息 | 设计 |
+| Information | Design |
 | --- | --- |
-| 照片 | 每条最多 10 张；支持手机拍照、相册、电脑选择文件及拖放；可设封面、移动顺序、移除、查看大图 |
-| 名称 | 可手填，例如“蓝色小花棉布”；不填时用“布料 + 录入日期”生成，可稍后改名 |
-| 材质 | 常见纤维多选并允许自定义，如棉、麻、羊毛、涤纶；单选默认为 100%，增加第二项时两个比例均留空，多选在各项前输入百分比；成分说明保留独立补充文本 |
-| 尺寸与数量 | 每组布片记录幅宽、长度和相同尺寸的片数；支持多组不同尺寸 |
-| 状态 | 未使用、使用中、已用完；默认未使用 |
-| 收纳位置 | 自定义文字并提示已有值，例如“衣柜上层 / 2 号箱” |
-| 可选信息 | 颜色、花型/用途标签、购买日期、店铺、购买总价、备注 |
+| Photos | Up to 10 per record; support phone camera, photo library, desktop file selection, and drag-and-drop; allow cover selection, reordering, removal, and full-image viewing |
+| Name | May be entered manually, for example “blue small-flower cotton”; when empty, generate the exact fallback `布料 + 录入日期`, which may be renamed later |
+| Material | Multi-select common fibers and allow custom values, such as the exact Chinese choices `棉`, `麻`, `羊毛`, and `涤纶`; a single selection defaults to 100%; after adding a second, both percentages are empty; with multiple selections, enter the percentage before each item; keep composition notes as independent text |
+| Dimensions and quantity | Each fabric-piece group records width, length, and the count of pieces with identical dimensions; support multiple groups with different dimensions |
+| Status | Unused, in use, or used up; defaults to unused |
+| Storage location | Custom text with suggestions from existing values, for example “upper wardrobe / box 2” |
+| Optional information | Color, pattern/use tags, purchase date, shop, total purchase price, and notes |
 
-快速入库时不强制填写尺寸或材质。至少有照片或手填名称即可创建，未测量尺寸明确显示“待补充”，不以 0 替代未知。无照片的记录也能保存，使用轻量占位卡片。
+Quick intake does not require dimensions or material. At least one photo or a manually entered name is enough to create a record. Unmeasured dimensions are explicitly shown as “to be completed” and are never replaced with 0. A record without a photo can also be saved and uses a lightweight placeholder card.
 
-材质名称用于搜索与识别，百分比保存为独立十进制字符串映射，多选允许留空、不限制总和为 100，不舍入用户输入。成分说明保持独立。购买总价是原始购入成本，不随余料变化折算。
+Material names support search and identification. Percentages are stored as an independent map of decimal strings; multiple selections may be empty, their total is not required to equal 100, and user input is not rounded. Composition notes remain independent. Total purchase price is the original acquisition cost and does not decrease with the remnant.
 
-### 3.2 尺寸与余料规则
+### 3.2 Dimension and Remnant Rules
 
-- UI 默认以厘米输入，可切换米；服务端统一存整数毫米，厘米最多一位小数、米最多三位小数。例：幅宽 150 cm、长度 2.5 m，保存为 1500 mm × 2500 mm。
-- 每组片数为正整数；宽、长可以分别未知，已知时必须大于 0。首版拟限制每条 50 组、每组最多 999 片、每个尺寸不超过 1000 m，后端与前端共同校验。
-- 新记录默认一片待测量布料。记录有库存时至少有一组；“未使用”和“使用中”有布片，“已用完”无剩余布片。状态与布片修改在同一事务内校验。
-- 详情页提供“更新余料”：直接填写现在剩下的尺寸、拆成多片或调整片数。例：150 × 250 cm 用掉一段后改成 150 × 180 cm；分成两块后保存两组尺寸。
-- 通过“更新余料”提交变化时默认转为“使用中”；普通编辑中补充待测量尺寸或更正录入错误不自动改变状态。“标记用完”需确认，移除当前布片并保留修改前快照；重新补充布片时转为“使用中”。
-- 不规则余料可记录最大宽长和形状备注；该尺寸用于辨识，不代表可裁出的矩形。满足尺寸的筛选默认只包含完整矩形，未知或不规则尺寸不承诺可用。
-- 每次保存记录变更摘要及变更前后的业务快照，便于查看原始购入尺寸和余料变化；不记录修改人，因为没有身份系统。首版提供查看历史，不提供复杂的历史合并或任意版本回滚。
-- 不把不同幅宽的布料合计成一个容易误解的“总米数”。首页统计记录数、在库记录数和待补充信息数即可。
+- The UI defaults to centimeters and can switch to meters. The server stores integer millimeters. Centimeters permit at most one decimal place; meters permit at most three. Example: width 150 cm and length 2.5 m are stored as 1500 mm × 2500 mm.
+- Each group has a positive integer piece count. Width and length may independently be unknown; when known, they must be greater than 0. The initial plan limits each record to 50 groups, each group to 999 pieces, and each dimension to 1000 m, with validation in both backend and frontend.
+- A new record defaults to one unmeasured piece. A record with stock has at least one group. “Unused” and “in use” have pieces; “used up” has none. Validate status and piece changes in the same transaction.
+- The details page provides the exact action `更新余料`: directly enter the dimensions currently remaining, split into multiple pieces, or adjust the count. Example: after using part of a 150 × 250 cm piece, change it to 150 × 180 cm; after splitting it into two pieces, save two dimension groups.
+- Submitting through `更新余料` changes the status to “in use” by default. Completing an unmeasured dimension or correcting an entry mistake in ordinary editing does not change status automatically. The exact action `标记用完` requires confirmation, removes current pieces, and preserves the before-change snapshot. Adding pieces again changes the status to “in use.”
+- An irregular remnant can record maximum width and length plus a shape note. Those dimensions aid identification but do not represent a guaranteed cuttable rectangle. A matching-dimensions filter includes only complete rectangles by default; unknown or irregular dimensions do not promise usability.
+- Every save stores a change summary and before/after business snapshots, making original purchase dimensions and remnant changes visible. It does not record the modifier because there is no application identity system. The initial release shows history but does not provide complex history merging or arbitrary version rollback.
+- Do not combine fabrics of different widths into a misleading “total meters” figure. Home-page statistics need only record count, in-stock count, and incomplete-information count.
 
-### 3.3 查找、整理与导出
+### 3.3 Finding, Organizing, and Exporting
 
-- 搜索名称、材质、标签、店铺、收纳位置和备注，支持中文包含匹配。
-- 按材质、颜色、状态、收纳位置、标签筛选，支持最低长度/幅宽筛选；尺寸筛选按某一组剩余矩形布片同时满足条件，不把多片拼接成一块。默认不自动旋转经纬方向。
-- 默认按最近购入排序，缺少购买日期时用录入日期；也可按最近修改、名称排序。排序加稳定的 ID 作为并列规则。
-- 首屏分页加载 24 条，滚动后可点“加载更多”；返回详情前保留筛选和列表位置。筛选与排序进入 URL，便于刷新和电脑打开。
-- 删除进入回收站，保留 30 天，可恢复；过期后由维护任务清理。常规界面不提供绕过回收站的立即永久删除。已用完与删除是不同状态。
-- 可导出记录 CSV，以及包含 JSON 清单和标准照片的 ZIP。CSV 对公式前缀做转义；ZIP 流式生成、限制并发，避免把照片全集放入内存。默认导出在库记录（未使用、使用中），可明确选择包含已用完；回收站记录不包含在常规导出中。
-- ZIP 是数据携带格式；首版不提供网页导入/恢复。完整灾难恢复走运维备份。
+- Search name, material, tags, shop, storage location, and notes, including Chinese substring matching.
+- Filter by material, color, status, storage location, and tag, with minimum length/width filters. One remaining rectangular piece must satisfy all dimensions simultaneously; do not join multiple pieces. Do not rotate warp and weft directions automatically by default.
+- Sort by most recent purchase by default, using entry date when purchase date is absent; also allow most recently modified and name sorting. Add stable ID as the tie-breaker.
+- Load 24 records on the first page, with an explicit `加载更多` action after scrolling. Preserve filters and list position when returning from details. Store filters and sorting in the URL so refresh and desktop opening retain them.
+- Deletion moves a record to a 30-day recycle bin from which it can be restored; maintenance removes expired records. The ordinary UI does not provide immediate permanent deletion that bypasses the recycle bin. Used up and deleted are distinct states.
+- Export records as CSV or as a ZIP containing a JSON manifest and standard photos. Escape CSV formula prefixes. Stream ZIP output and limit concurrency rather than loading every photo into memory. Export in-stock records—unused and in use—by default and allow explicit inclusion of used-up records. Ordinary export excludes recycle-bin records.
+- ZIP is a data-portability format. The initial release does not provide web import/recovery; complete disaster recovery uses operational backups.
 
-首版暂不包含：AI 材质识别、自动从照片测量尺寸、购物网站采集、裁剪排料算法、在制缝纫项目管理、社交分享、用户体系、离线同步和多库权限。照片不能可靠测量真实尺寸，尺寸始终由用户确认。
+The initial release excludes AI material identification, automatic dimension measurement from photos, shopping-site collection, cutting-layout algorithms, works-in-progress management, social sharing, user accounts, offline synchronization, and multi-library permissions. Photos cannot measure true dimensions reliably; the user always confirms dimensions.
 
-## 4. 手机与电脑交互
+## 4. Phone and Desktop Interaction
 
-### 4.1 主要页面
+### 4.1 Primary Pages
 
-| 页面 | 手机 | 电脑 |
+| Page | Phone | Desktop |
 | --- | --- | --- |
-| 布料库 | 两列照片卡片，顶部搜索，筛选用底部面板，右下固定“新增”；极窄宽度按内容退为一列 | 自适应 3–5 列卡片，筛选可在侧边展开 |
-| 新增 / 编辑 | 独立页面，照片在上，材质尺寸在中，可选信息折叠；底部固定保存区 | 有限最大宽度的表单，照片与字段分列 |
-| 布料详情 | 大图、状态、剩余尺寸、收纳位置依次展示；编辑和更新余料容易触达 | 左侧图库、右侧信息，历史独立区域 |
-| 回收站 | 卡片列表、删除日期、恢复入口 | 同样功能，利用更宽布局 |
-| 材质管理 | 可搜索材质列表、无结果时添加、布料数量和批量移除确认 | 居中列表，提供相同操作 |
+| Fabric library | Two-column photo cards, search at the top, filters in a bottom sheet, and a fixed `新增` action at lower right; fall back to one column at extremely narrow widths according to content | Responsive 3–5-column cards, with filters expandable at the side |
+| Create / edit | Dedicated page with photos above, materials and dimensions in the middle, optional information collapsed, and a fixed save area at the bottom | Maximum-width form with photos and fields in columns |
+| Fabric details | Large image, status, remaining dimensions, and storage location in sequence; editing and remnant updating are easy to reach | Gallery on the left, information on the right, with history in a separate area |
+| Recycle bin | Card list, deletion date, and restore entry | Same functions using the wider layout |
+| Material management | Searchable material list, add on no result, fabric count, and bulk-removal confirmation | Centered list with the same operations |
 
-右上角三横线按钮展开菜单，提供回收站和材质管理入口；原布料库按钮移除，点击左侧品牌返回首页。材质使用数量包含回收站并单独标明，确认移除后从所有相关布料及其百分比中删除；保留布料、照片和成分说明，剩一种材质时恢复 100%。
+The top-right hamburger opens a menu containing recycle-bin and material-management entries. Remove the original fabric-library button; clicking the brand at left returns home. Material usage counts include the recycle bin and identify it separately. After removal confirmation, delete the material and its percentages from every related fabric while preserving fabrics, photos, and composition notes; restore 100% when one material remains.
 
-视觉方向采用暖白底、低饱和辅助色和清楚的文字层级，以布料照片为主体。界面中文优先，主标题可用“我的布料”；不添加与管理任务无关的装饰或宣传文案。
+The visual direction uses a warm-white background, muted supporting colors, and clear text hierarchy, keeping fabric photos primary. The interface is Chinese-first, and its main title may use the exact text `我的布料`; do not add decoration or marketing copy unrelated to the management task.
 
-### 4.2 快速拍照流程
+### 4.2 Quick Photo Flow
 
-1. 点击“新增”，选择“拍照”或“从相册选择”。两个入口分开，电脑显示文件选择与拖放。
-2. 图片先显示本地预览和每张进度，后台按顺序上传；HEIC 无法本地预览时显示处理中占位。用户可以同步填写信息。
-3. 显示材质、尺寸与收纳位置；可不补充直接保存。存在选中但未成功上传的照片时，保存前须重试或明确移除，不能悄悄漏图。
-4. 保存成功后进入详情，可选择“继续录入”；失败保留输入和已成功上传的照片。
+1. Select the exact action `新增`, then choose `拍照` or `从相册选择`. Keep the two entries separate; desktop shows file selection and drag-and-drop.
+2. Show a local preview and per-image progress immediately while uploading in sequence in the background. If HEIC cannot be previewed locally, show a processing placeholder. The user can fill in information concurrently.
+3. Show material, dimensions, and storage location, while allowing immediate save without completing them. If any selected photo has not uploaded successfully, require retry or explicit removal before save; do not silently omit it.
+4. After a successful save, open details and offer `继续录入`. On failure, preserve input and photos already uploaded successfully.
 
-拍照入口使用 `<input type="file" accept="image/*" capture="environment">` 请求后置摄像头；相册入口不设置 `capture`，允许多选。`capture` 是浏览器提示，不保证所有浏览器都直接打开相机，需保留系统选择器降级体验。
+The camera entry uses `<input type="file" accept="image/*" capture="environment">` to request the rear camera. The photo-library entry omits `capture` and allows multiple selection. `capture` is a browser hint and does not guarantee that every browser opens the camera directly; retain the system-picker fallback experience.
 
-### 4.3 可用性与弱网
+### 4.3 Usability and Weak Networks
 
-- 常用触控区域至少 44 × 44 CSS px，输入框字体至少 16 px；数字字段用合适的 `inputmode`。适配安全区、横竖屏和软键盘，保存按钮不能遮挡最后一个字段。
-- 卡片保留固定图片比例，文字最多显示必要行数；标签过多时收起，避免布局跳动。状态除了颜色还显示文字。
-- 返回列表恢复位置；筛选提交才更新结果；无结果、无照片、首次使用、上传失败都有可执行的下一步。
-- 当前表单在会话内保存文字草稿；刷新后恢复文字和仍有效的暂存照片引用。浏览器刷新会丢失未上传的本地文件，需要明确提示重新选择。草稿不是正式数据或离线写入队列。
-- 断网时明确显示未保存；服务端成功确认后才清除草稿。写入使用幂等请求，超时后先确认结果，再决定重试，避免移动网络重传造成重复记录。
-- 提供键盘操作、焦点反馈、表单关联标签与行内错误；不把滑动、长按或拖动作为唯一操作方式。照片排序也提供前移/后移按钮。
+- Common touch targets are at least 44 × 44 CSS px, and input fonts are at least 16 px; numeric fields use appropriate `inputmode` values. Accommodate safe areas, orientation, and the soft keyboard. The Save button must not cover the last field.
+- Cards reserve a fixed image ratio and show only the necessary number of text lines. Collapse excessive tags to avoid layout shifts. Status is conveyed by text as well as color.
+- Returning to the list restores position. Filters update results only after submission. Empty results, no-photo records, first use, and upload failures each provide an actionable next step.
+- Save the current form's text draft for the session. After refresh, restore text and still-valid staged-photo references. Refresh loses local files that have not uploaded and must explicitly ask the user to select them again. A draft is not formal data or an offline write queue.
+- When offline, clearly show that the record is unsaved. Clear a draft only after server success is confirmed. Writes use idempotent requests; after a timeout, check the result before deciding whether to retry so mobile-network retransmission cannot duplicate records.
+- Provide keyboard operation, focus feedback, associated form labels, and inline errors. Do not make swipe, long press, or drag the only way to perform an action. Photo ordering also provides move-forward/move-back buttons.
 
-## 5. 技术架构
+## 5. Technical Architecture
 
 ```mermaid
 flowchart LR
-    B[手机 / 电脑浏览器] --> N[Nginx /fabricworld/]
-    N --> A[Go HTTP 服务 127.0.0.1:18082]
-    A --> V[内嵌 Vue 静态页面]
-    A --> D[(独立 SQLite)]
-    A --> P[受限图片处理子进程 libvips + HEIC 解码器]
-    P --> F[本地不可变图片文件]
+    B[Phone / desktop browser] --> N[Nginx /fabricworld/]
+    N --> A[Go HTTP service 127.0.0.1:18082]
+    A --> V[Embedded Vue static application]
+    A --> D[(Independent SQLite database)]
+    A --> P[Restricted image-processing subprocess: libvips + HEIC decoder]
+    P --> F[Local immutable image files]
     A --> F
-    T[systemd 定时维护] --> K[一致性数据库快照 + 图片清单]
+    T[systemd scheduled maintenance] --> K[Consistent database snapshot + image manifest]
     D --> K
     F --> K
 ```
 
-| 层 | 选择与原因 |
+| Layer | Choice and rationale |
 | --- | --- |
-| 前端 | Vue 3、TypeScript、Vite、Vue Router；与现有项目接近，便于维护；自适应 CSS，不引入重型管理后台模板 |
-| 后端 | Go 标准 HTTP 服务，业务校验与 SQL 直接组织；一个应用，无独立队列或微服务 |
-| 数据库 | SQLite，候选驱动 `modernc.org/sqlite`；WAL、外键、短写事务、忙等待，适合单实例少量设备 |
-| 图片 | libvips 命令行及 HEIC 解码插件；Go 调用固定可执行文件和结构化参数，避免 shell 拼接与大量图片常驻内存 |
-| 运行 | Go 程序内嵌前端 + 官方包图片依赖；systemd 管理，Nginx 代理，日志进入 journal |
+| Frontend | Vue 3, TypeScript, Vite, and Vue Router; close to existing projects and easy to maintain; responsive CSS without a heavyweight admin template |
+| Backend | Go standard HTTP service with direct organization of business validation and SQL; one application, without a separate queue or microservices |
+| Database | SQLite with candidate driver `modernc.org/sqlite`; WAL, foreign keys, short write transactions, and busy waits suit a single instance with a few devices |
+| Images | libvips command line plus HEIC decoder plugin; Go invokes a fixed executable with structured arguments, avoiding shell concatenation and large images remaining resident in memory |
+| Runtime | Go program with embedded frontend plus official-package image dependencies; managed by systemd, proxied by Nginx, with logs in the journal |
 
-这里的“单应用”包含按需启动的图片处理子进程，不是完全无外部依赖的单二进制部署。引入图片工具是为了可靠处理 HEIC、方向、颜色和缩略图；只用浏览器转换会把兼容性和内存压力留给手机。
+Here, “single application” includes image-processing subprocesses started on demand; this is not a completely dependency-free single-binary deployment. The image tools provide reliable HEIC, orientation, color, and thumbnail handling. Browser-only conversion would shift compatibility and memory pressure to the phone.
 
-实施时选择官方仍受支持的稳定版本并锁定依赖。图片处理依赖优先使用 Ubuntu 官方签名软件源；本轮不安装软件。
+During implementation, choose supported stable versions from official sources and lock dependencies. Prefer Ubuntu's officially signed repository for image-processing dependencies. No software was installed during this planning round.
 
-### 5.1 代码组织
+### 5.1 Code Organization
 
 ```text
 FabricWorld/
-  cmd/fabricworld/       serve、init、migrate、backup、check、restore 等入口
-  internal/httpapi/     请求解析、来源检查、错误映射
-  internal/fabric/      布料、尺寸、筛选、版本与 SQL
-  internal/media/       上传、解码、缩略图、文件生命周期
-  internal/backup/      数据库与图片的一致性备份/恢复
-  migrations/          显式 schema 迁移
-  web/                 Vue 页面、组件、请求层和浏览器测试
-  deploy/              本项目的 Nginx、systemd、备份与发布模板
-  docs/                架构、API、运维、本机发布 和验收说明
+  cmd/fabricworld/       entry points for serve, init, migrate, backup, check, restore, and others
+  internal/httpapi/      request parsing, origin checks, and error mapping
+  internal/fabric/       fabrics, dimensions, filters, versions, and SQL
+  internal/media/        uploads, decoding, thumbnails, and file lifecycle
+  internal/backup/       consistent database-and-image backup/recovery
+  migrations/            explicit schema migrations
+  web/                   Vue pages, components, request layer, and browser tests
+  deploy/                project Nginx, systemd, backup, and release templates
+  docs/                  architecture, API, operations, local release, and acceptance notes
 ```
 
-不先设计通用插件、复杂仓储抽象或跨项目共享业务包。维护脚本使用 Go、shell 或现有构建工具，不增加 Python 运行依赖。
+Do not begin by designing a generic plugin system, a complex repository abstraction, or a cross-project shared business package. Maintenance scripts use Go, shell, or existing build tools and do not add a Python runtime dependency.
 
-## 6. 数据模型与一致性
+## 6. Data Model and Consistency
 
-| 对象 | 关键字段 / 职责 |
+| Object | Key fields / responsibility |
 | --- | --- |
-| `fabrics` | ID、名称、材质列表、材质百分比与成分说明、颜色、标签、状态、收纳位置、购买信息、备注、revision、创建/修改/删除时间 |
-| `fabric_pieces` | fabric_id、宽/长毫米、片数、是否不规则、形状备注、排序；表示当前剩余布料 |
-| `media` | ID、所属布料或暂存状态、主图/缩略图相对路径、尺寸、字节数、摘要、排序、移除时间 |
-| `fabric_changes` | fabric_id、revision、动作、时间、变更前后业务快照；不存原始图片字节 |
-| `operations` | 幂等键、请求指纹、操作状态与结果、过期时间 |
+| `fabrics` | ID, name, material list, material percentages and composition note, color, tags, status, storage location, purchase information, notes, `revision`, and created/modified/deleted times |
+| `fabric_pieces` | `fabric_id`, width/length in millimeters, piece count, irregular flag, shape note, and order; represents currently remaining fabric |
+| `media` | ID, owning fabric or staged state, main/thumbnail relative paths, dimensions, byte count, digest, order, and removal time |
+| `fabric_changes` | `fabric_id`, `revision`, action, time, and before/after business snapshots; does not store original image bytes |
+| `operations` | Idempotency key, request fingerprint, operation state and result, and expiration time |
 
-材质和标签首版保存为有长度/数量上限的 JSON 字符串数组，通过 SQLite JSON 查询；常用项从已有记录提取。地点保存文本，编辑一条记录不隐式改写其他记录。数据规模目标为约 10,000 条布料记录，图片规模另受磁盘配额控制；先对查询计划和索引实测，不提前引入全文搜索服务。
+The initial release stores materials and tags as bounded JSON string arrays and queries them through SQLite JSON. Common items are derived from existing records. Location is text; editing one record does not implicitly rewrite others. The target scale is approximately 10,000 fabric records, with image volume separately controlled by disk quota. Measure query plans and indexes before introducing a full-text search service.
 
-材质管理合并全部当前记录（含回收站）与独立 material_catalog(name,id) 表；搜索无结果时允许添加零使用材质，编辑器可选且未使用时不自动删除。批量移除按精确名称匹配，以目录随机身份及相关记录的 ID/revision 集合摘要校验版本；在一个事务删除目录项、更新全部记录、修改历史和幂等结果。目录过期返回 409 并重新确认，未知结果保存原请求键供查询/重试及刷新恢复。未使用且未独立添加的内置建议不列入目录，已保存自定义材质可在编辑器复用。migrate 显式创建兼容目录表，保留 v1 格式以支持程序回退。
+Material management merges all current records, including the recycle bin, with the independent `material_catalog(name,id)` table. When search has no result, allow adding a zero-use material; it is available in the editor and is not automatically deleted while unused. Bulk removal matches an exact name and validates the catalog's random identity plus a digest of related records' ID/`revision` set. In one transaction, remove the catalog entry, update all records, write change history, and store the idempotent result. A stale catalog returns 409 and requires reconfirmation. For an unknown result, preserve the original request key for lookup/retry and refresh recovery. Unused built-in suggestions that were not independently added do not appear in the catalog. Saved custom materials can be reused in the editor. `migrate` explicitly creates the compatible catalog table while preserving the v1 format for program rollback.
 
-数据库索引覆盖未删除状态、更新时间、购买日期和关联表外键。复杂筛选由服务端在分页前完成，列表计数覆盖完整筛选集，不只统计当前页面。
+Database indexes cover non-deleted status, update time, purchase date, and relation-table foreign keys. The server applies complex filters before pagination, and list counts cover the complete filtered set rather than only the current page.
 
-- 金额以人民币“分”的整数保存；API 使用十进制字符串输入金额和带单位的尺寸，不用二进制浮点数计算库存或金额。空金额与 0 区分。
-- 购买日期保存 `YYYY-MM-DD`，操作时间保存 UTC 时间点，界面按设备本地时区显示。
-- 修改、余料更新、照片绑定/排序、删除和恢复都检查 `revision`；发现另一台设备已修改时返回 409，保留当前表单并提示刷新核对。
-- 创建和其他写入携带幂等键，结果与业务事务一起提交。相同键/相同请求返回原结果，相同键/不同请求拒绝；客户端网络超时先查操作结果。幂等结果拟保留 7 天，过期的未知写入不盲目自动重试。
-- 记录与照片引用在同一事务内更新；一次保存全成功或全失败。图片解码不占数据库写事务。
-- 正常服务启动要求数据库已存在、身份正确、schema 兼容；首次安装显式 `init` 空库。缺库、损坏或迁移失败不能自动创建空库掩盖问题。
+- Store monetary amounts as integer Chinese yuan cents. The API accepts decimal strings for amounts and dimensions with units; do not use binary floating point for inventory or money. Empty amount and 0 are distinct.
+- Store purchase dates as `YYYY-MM-DD` and operation times as UTC instants; the UI displays operation times in the device's local time zone.
+- Modification, remnant updates, photo binding/order, deletion, and restoration all check `revision`. When another device has changed the record, return 409, preserve the current form, and ask the user to refresh and compare.
+- Create and other writes carry an idempotency key, with the result committed in the business transaction. The same key/request returns the original result; the same key with a different request is rejected. After a client network timeout, query the operation result first. Retain idempotency results for a proposed seven days; do not blindly retry an unknown write after expiration.
+- Update the record and image references in one transaction; each save succeeds or fails as a unit. Image decoding does not occupy a database write transaction.
+- Normal service startup requires the database to exist with the correct identity and compatible schema. First installation explicitly runs `init` for an empty database. A missing database, corruption, or migration failure must not be hidden by automatically creating an empty database.
 
-## 7. 照片上传、处理与生命周期
+## 7. Photo Upload, Processing, and Lifecycle
 
-### 7.1 输入与输出
+### 7.1 Input and Output
 
-首版接受 JPEG、PNG、WebP、HEIC/HEIF 静态图片；服务端根据内容识别格式，不相信扩展名和客户端 MIME。拒绝 SVG、可执行内容与不支持的动态/多帧输入；手机 Live Photo 只接收其中的静态照片，不接收视频。常规 iPhone HEIC 是否能正确选取主图，是技术验证阶段的必测项。
+The initial release accepts static JPEG, PNG, WebP, HEIC, and HEIF images. The server identifies formats from content and does not trust extensions or client MIME types. Reject SVG, executable content, and unsupported animated/multiframe input. For a phone Live Photo, accept only its static photo, not the video. Correctly selecting the primary image from ordinary iPhone HEIC is mandatory during technical validation.
 
-建议初始限制：每文件 25 MiB、最多 80 百万像素、每条最多 10 张。Nginx 对上传请求允许略高于文件上限的 multipart 开销，应用再执行精确限制；普通 JSON 请求另设较小上限。超限时用中文说明可选的处理方式。
+Suggested initial limits: 25 MiB per file, at most 80 megapixels, and at most 10 photos per record. Nginx allows upload requests slightly larger than the file limit to accommodate multipart overhead; the application enforces the exact limit. Ordinary JSON requests have a separate smaller limit. When a limit is exceeded, explain the available remediation in Chinese.
 
-图片处理顺序：验证格式和尺寸 → 按 EXIF/HEIF 方向归正 → 使用输入色彩信息转为 sRGB → 缩放 → 输出 JPEG 主图与 WebP 缩略图 → 清除 EXIF/GPS 等元数据。先做颜色转换再移除元数据；不承诺照片颜色等同于实物。
+Image-processing order: validate format and dimensions → normalize EXIF/HEIF orientation → convert to sRGB using input color information → resize → output the JPEG main image and WebP thumbnail → remove EXIF/GPS and other metadata. Convert color before removing metadata. Do not promise that photo color equals the physical object.
 
-- 主图最长边 2560 px，默认 JPEG 质量约 88；缩略图最长边 640 px，WebP 质量约 80。小图不放大，PNG 透明区使用固定浅色背景。参数由布纹与花色样本实测调整；更细小纹理可单独拍摄近景，不以压缩后的总览图代替微距照片。
-- 不长期保留原始上传文件，处理完成后清理临时输入。图像处理失败时给出原因并保留可重试状态。
-- 不依赖云端图片 API，也不上传照片给第三方识别服务。
-- 浏览器负责预览、进度和逐张重试，首版不把大图解码压缩作为手机保存的前置条件。标准化由服务器完成。
+- The main image has a maximum long edge of 2560 px and a default JPEG quality near 88; the thumbnail has a maximum long edge of 640 px and WebP quality near 80. Do not enlarge small images. Place PNG transparency on a fixed light background. Tune parameters with fabric-texture and pattern samples. Fine textures may be photographed separately in close-up; do not use a compressed overview in place of a macro image.
+- Do not retain original uploads long term. Remove temporary input after processing. On image-processing failure, explain the cause and preserve a retryable state.
+- Do not depend on a cloud image API or upload photos to a third-party recognition service.
+- The browser manages previews, progress, and per-image retries. In the initial release, do not require phone-side full-image decoding or compression before save; standardization happens on the server.
 
-### 7.2 上传与提交分离
+### 7.2 Separating Upload from Submission
 
-1. 每张照片单独上传，默认客户端同时上传 1 张；服务器先流式落临时目录并检查实际字节数，避免整批文件进入内存。
-2. 图片处理全局并发先设为 1，设置处理超时、有限等待队列及子进程退出清理。繁忙时返回可重试反馈，不无限堆积。
-3. 处理结果先完整写入最终文件路径并同步落盘，再产生可绑定的 `media_id`。文件名由服务端生成，不使用用户文件名作为路径。
-4. 图片暂存成功不等于布料已保存。用户保存表单时，后端原子创建/更新布料并绑定有效的暂存照片；被绑定的照片不能重复绑定到另一条记录。
-5. 暂存照片有效期 24 小时；未被引用的文件在维护时清理。文件已写入、数据库提交前崩溃形成的孤立文件通过带宽限期的核对任务回收。
-6. 已保存图片保持不可变；替换产生新文件。移除图片保留 30 天后清理，删除整条布料时保留其照片以便回收站恢复。历史记录只保证保留业务快照，不保证永久保存已清理的历史照片。
+1. Upload each photo separately, with client concurrency defaulting to one. The server first streams to a temporary directory and verifies actual byte count, avoiding an entire batch in memory.
+2. Initially set global image-processing concurrency to one, with a processing timeout, bounded wait queue, and subprocess-exit cleanup. Return retryable busy feedback rather than allowing an unbounded backlog.
+3. Completely write and synchronize processing output at its final path before creating a bindable `media_id`. The server generates filenames; user filenames are never used as paths.
+4. A successfully staged image does not mean the fabric has been saved. When the user saves the form, the backend atomically creates or updates the fabric and binds valid staged photos. A bound photo cannot be bound again to another record.
+5. Staged photos remain valid for 24 hours. Maintenance cleans unreferenced files. A bounded reconciliation task reclaims orphaned files left when a crash occurs after file write but before database commit.
+6. Saved images remain immutable; replacement creates a new file. Removed images are retained for 30 days before cleanup. When an entire fabric is deleted, retain its photos so recycle-bin restoration works. History guarantees business snapshots only and does not promise permanent retention of cleaned historical photos.
 
-列表只请求缩略图，大图在打开详情时按需加载；设置宽高占位、懒加载和有界的 HTTP 缓存。回收站与已移除图片不通过普通媒体接口展示；缓存期较短，不能承诺撤回别人已经下载的照片。
+Lists request only thumbnails; load main images on demand when opening details. Reserve width/height space, lazy-load, and use bounded HTTP caching. Recycle-bin and removed images are not exposed through the ordinary media endpoint. Cache duration remains short; the application cannot revoke an image another party already downloaded.
 
-### 7.3 资源控制
+### 7.3 Resource Controls
 
-- 使用上传速率限制、并发限制、解码像素上限、子进程超时和 systemd 资源约束。来源限速是防误操作/滥用措施，不是身份识别。
-- 图片子进程与应用共同计入 FabricWorld 的资源额度；拟从 640 MiB 内存上限和约 1 个 CPU 的额度开始压测，不能仅限制 Go 堆而漏掉解码器。超限可能导致任务失败或服务重启，需通过幂等与临时文件回收恢复。最终值以 48 MP HEIC/JPEG 与并发浏览实测确定。
-- 初始有效媒体配额建议 5 GiB，并监控包含临时文件、回收站和备份保留文件在内的实际磁盘使用；根盘剩余不足 5 GiB 时拒绝新上传，保留浏览与已有数据管理能力。不能只计算数据库已绑定图片。
-- 1000 条记录、每条 4 张照片，按每张处理后约 0.5–1.5 MiB 粗估约占 2–6 GiB；照片纹理和内容会显著影响体积。5 GiB 是可调整的初始配额，不是保证可保存的记录数量。
+- Apply upload rate limits, concurrency limits, decoded-pixel limits, subprocess timeouts, and systemd resource constraints. Origin rate limits prevent mistakes and abuse; they do not identify a person.
+- Image subprocesses and the application share FabricWorld's resource allocation. Begin load testing with a proposed 640 MiB memory limit and approximately one CPU; do not limit only the Go heap while excluding the decoder. Exceeding a limit may fail a task or restart the service, requiring idempotency and temporary-file reclamation for recovery. Determine final values from 48 MP HEIC/JPEG and concurrent-browsing measurements.
+- Recommend an initial effective media quota of 5 GiB. Monitor actual disk usage including temporary files, recycle-bin data, and retained backups. Reject new uploads when the root disk has less than 5 GiB free, while preserving browsing and management of existing data. Do not count only database-bound images.
+- For 1,000 records with four processed photos each, a rough estimate of 0.5–1.5 MiB per image produces approximately 2–6 GiB. Texture and content significantly affect size. The 5 GiB initial quota is adjustable and is not a guaranteed record count.
 
-## 8. API 与访问边界
+## 8. API and Access Boundaries
 
-外部前缀统一为 `/fabricworld/`。Nginx 去掉此前缀，Go 内部使用 `/api/...` 和 `/media/...`；Vite 资源、Vue Router 和 API 客户端使用同一个 base 配置。
+The external prefix is consistently `/fabricworld/`. Nginx strips it, and Go uses internal `/api/...` and `/media/...` paths. Vite assets, Vue Router, and the API client share one base configuration.
 
-| 端点示意 | 用途 |
+| Example endpoint | Purpose |
 | --- | --- |
-| `GET /api/fabrics` | 搜索、筛选、排序与分页 |
-| `POST /api/fabrics` | 创建记录并绑定照片 |
-| `GET /api/fabrics/{id}` | 详情、布片、照片和 revision |
-| `PUT /api/fabrics/{id}` | 完整保存表单及余料，校验版本 |
-| `DELETE /api/fabrics/{id}` | 进入回收站，校验版本 |
-| `POST /api/fabrics/{id}/restore` | 从回收站恢复，校验版本 |
-| `GET /api/fabrics/{id}/changes` | 修改历史 |
-| `POST /api/uploads` | 单图片上传和处理，返回暂存引用 |
-| `GET /api/operations/{key}` | 核对超时写入结果 |
-| `GET /api/suggestions` | 已用材质、标签与收纳位置提示 |
-| `GET /api/materials` | 已保存材质及布料数量、回收站数量和集合版本 |
-| `POST /api/materials` | 持久添加零使用名称，要求幂等键 |
-| `POST /api/materials/remove` | 按名称和集合版本原子移除全部使用，要求幂等键 |
-| `GET /api/export` | CSV 或带照片 ZIP，按筛选条件取一致快照 |
-| `GET /media/{id}/{variant}` | 已校验媒体响应；不暴露磁盘路径 |
-| `GET /healthz` | 服务健康；不输出记录、照片或内部配置 |
+| `GET /api/fabrics` | Search, filtering, sorting, and pagination |
+| `POST /api/fabrics` | Create a record and bind photos |
+| `GET /api/fabrics/{id}` | Details, pieces, photos, and `revision` |
+| `PUT /api/fabrics/{id}` | Save the complete form and remnants, checking the version |
+| `DELETE /api/fabrics/{id}` | Move to the recycle bin, checking the version |
+| `POST /api/fabrics/{id}/restore` | Restore from the recycle bin, checking the version |
+| `GET /api/fabrics/{id}/changes` | Change history |
+| `POST /api/uploads` | Upload and process one image, returning a staged reference |
+| `GET /api/operations/{key}` | Check the result of a timed-out write |
+| `GET /api/suggestions` | Suggestions for used materials, tags, and storage locations |
+| `GET /api/materials` | Saved materials, fabric counts, recycle-bin counts, and set versions |
+| `POST /api/materials` | Persist a zero-use name; requires an idempotency key |
+| `POST /api/materials/remove` | Atomically remove all uses by name and set version; requires an idempotency key |
+| `GET /api/export` | CSV or photo ZIP from a consistent snapshot under the current filters |
+| `GET /media/{id}/{variant}` | Validated media response that does not expose disk paths |
+| `GET /healthz` | Service health without records, photos, or internal configuration |
 
-错误统一包含稳定错误码、可读消息和字段错误；关键状态包括 409 版本冲突、413 文件过大、415 格式不支持、422 无效输入、429 繁忙/限速。
+Errors consistently include a stable error code, readable message, and field errors. Key statuses include 409 version conflict, 413 file too large, 415 unsupported format, 422 invalid input, and 429 busy/rate limited.
 
-这是无身份验证的网络服务。任何能访问服务的人都可进行上述业务操作和导出，不能把地址不公开、随机记录 ID、路径前缀或 GitHub 私有仓库当成访问控制。
+This is a network service without identity authentication. Anyone able to reach it can perform the listed business operations and export data. An undisclosed address, random record IDs, a path prefix, or a private GitHub repository cannot be treated as access control.
 
-仍做与该模型相容的基础校验：写入来源检查、不开放跨站 CORS、限制请求体、参数化 SQL、纯文本渲染用户输入、只提供重新编码的安全图片、固定媒体 Content-Type 与 `nosniff`，并为新项目配置 CSP。HTTP Origin 检查只减少跨站页面发起的误操作，不能阻止直接客户端调用；同一个 IP 的不同应用路径也不是浏览器安全隔离。
+The design still applied baseline validation compatible with that model: write-origin checks, no cross-origin CORS, body-size limits, parameterized SQL, plain-text rendering of user input, only safely re-encoded images, fixed media `Content-Type` with `nosniff`, and a CSP for the new project. HTTP Origin checks only reduce accidental operations launched by cross-site pages and cannot stop a direct client. Different application paths on one IP are not browser security boundaries.
 
-当前五个应用统一使用可信 IP 证书的 HTTPS，共享 Nginx 入口、自动续期和回退见 [共享 HTTPS 运维](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/https.md)。HTTPS 提供传输加密，应用仍以联网使用为主；尚未实现 getUserMedia、Service Worker 或离线功能。
+The current five applications use HTTPS with a trusted IP certificate. See [shared HTTPS operations](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/https.md) for the shared Nginx entry point, automatic renewal, and rollback. HTTPS provides transport encryption. The application remains primarily online and still has no `getUserMedia`, Service Worker, or offline capability.
 
-## 9. 部署、发布与现有项目影响
+## 9. Deployment, Release, and Existing-Project Impact
 
-| 项目 | 建议值 |
+| Item | Recommended value |
 | --- | --- |
-| 仓库 | `Crashmere/FabricWorld`，实施时创建 |
-| 外部路径 | `/fabricworld/`；`/fabricworld` 重定向并保留查询参数 |
-| 内部监听 | `127.0.0.1:18082`，不新增公网应用端口 |
-| 目录 | `/opt/fabricworld/{bin,config,data,backups,docs,releases}` |
-| 数据 | `data/fabricworld.db`、`data/media/`、`data/tmp/` |
-| 身份 | 运行 `fabricworld`；发布 `fabricworld-deploy` |
-| 服务 | `fabricworld.service`，备份 service/timer；维护清理有单独明确入口 |
-| Nginx | 本项目维护 location 配置，由 `/etc/nginx/app-locations/fabricworld.conf` 链接引入 |
+| Repository | `Crashmere/FabricWorld`, to be created during implementation |
+| External path | `/fabricworld/`; `/fabricworld` redirects while preserving query parameters |
+| Internal listener | `127.0.0.1:18082`; no new public application port |
+| Directories | `/opt/fabricworld/{bin,config,data,backups,docs,releases}` |
+| Data | `data/fabricworld.db`, `data/media/`, and `data/tmp/` |
+| Identities | Runtime `fabricworld`; release `fabricworld-deploy` |
+| Services | `fabricworld.service` and backup service/timer; maintenance cleanup has a separate explicit entry point |
+| Nginx | This project maintains a location configuration linked from `/etc/nginx/app-locations/fabricworld.conf` |
 
-应用用户仅能写自身数据和获准目录，程序及配置由 root 管理。数据和备份目录限制权限；应用负责提供图片响应，不通过给 Nginx 开放整个数据目录来提供照片。
+The application user can write only its own data and approved directories. Root manages the program and configuration. Restrict permissions on data and backup directories. The application serves images itself rather than exposing the entire data directory through Nginx.
 
-首次部署安装官方图片依赖，创建目录/运行身份，显式初始化空库，启动应用并接入 Nginx。后续发布仅更新程序与必要配置，不覆盖运行数据。schema 变更走显式迁移、发布前一致性备份和版本检查；程序回退不能冒充数据库回退。
+First deployment installs official image dependencies, creates directories and runtime identities, explicitly initializes an empty database, starts the application, and integrates it with Nginx. Later releases update only the program and required configuration without overwriting runtime data. Schema changes use explicit migration, a consistent pre-release backup, and version checks. Program rollback must not masquerade as database rollback.
 
-上线验收后更新项目维护入口及架构/API/运维/发布 文档，同时将 FabricWorld 加入共享应用清单，登记端口、身份、依赖、备份和健康路径，并同步服务器文档与来源标记。共享技能的维护阶段使用 `personal-skill-management`，不在本轮规划中把候选方案写成服务器当前状态。
+After launch acceptance, update the project maintenance entry point and architecture/API/operations/release documentation. Add FabricWorld to the shared application inventory, recording its port, identities, dependencies, backups, and health path, then synchronize server documentation and its source marker. Shared-skill maintenance uses `personal-skill-management`; this planning round did not write a candidate plan into server current state.
 
-现有应用的影响限于共享主机资源和 Nginx 加载新 location。部署前后都要验证 Ledger、FeeTable 的健康接口、页面深链接、静态资源及各自 API 路径；`nginx -t` 成功后平滑 reload，不为了新项目重启服务器或迁移旧项目。图片依赖安装前查看包管理器拟执行的变更；若出现额外服务重启等影响，先调整实施方式。
+Impact on existing applications is limited to shared host resources and loading a new Nginx location. Before and after deployment, verify Ledger and FeeTable health endpoints, page deep links, static assets, and their API paths. Reload Nginx gracefully after `nginx -t` succeeds; do not restart the server or migrate an old project for the new application. Before installing image dependencies, inspect the package manager's planned changes. If it proposes effects such as additional service restarts, adjust the implementation approach first.
 
-## 10. 备份与恢复
+## 10. Backup and Recovery
 
-照片和数据库必须作为一个可恢复的数据集。活跃 WAL 数据库不能只复制主文件；单独备份数据库也无法找回图片。
+Photos and the database must form one recoverable dataset. Never copy only the main file of an active WAL database. A database-only backup also cannot recover images.
 
-建议每天北京时间 03:30 备份，加 0–5 分钟随机延迟，与现有 03:00、03:15 的任务错开；保留 14 份 daily，发布前另做有界保留的备份。调度和空间上限在部署文档中写成明确参数。
+The recommendation was daily backup at 03:30 China Standard Time with 0–5 minutes of random delay, avoiding existing 03:00 and 03:15 jobs. Retain 14 daily backups, plus bounded pre-release backups. Record schedules and space limits as explicit parameters in deployment documentation.
 
-一致性流程：
+Consistency procedure:
 
-1. 备份与媒体清理共用跨进程维护锁，备份期间阻止文件回收；数据库正常读写可继续。
-2. 使用 SQLite 一致性备份接口生成独立数据库快照，从该快照枚举需要保留的图片，包括仍在回收期的引用。
-3. 因为图片文件不可变、先落盘后提交引用，快照列出的文件可以稳定备份；给每个文件记录路径、大小和摘要，遇到缺图则备份失败并报警到日志，不能标记为完整。
-4. 同盘快照目录使用硬链接保存不可变媒体，数据库快照独立复制，避免 14 天内重复复制全部照片；底层不支持硬链接时需先估算容量再采用复制。正式应用禁止原地覆盖媒体文件。
-5. 清单、数据库完整性和图片摘要检查通过后，原子标记该份备份完成，再执行保留策略；失败的备份不能替换上一份成功备份。
+1. Backup and media cleanup share a cross-process maintenance lock. During backup, block file reclamation while allowing normal database reads and writes to continue.
+2. Use SQLite's consistent backup interface to create an independent database snapshot. Enumerate required images from that snapshot, including references still within their recycle period.
+3. Because image files are immutable and references commit only after file persistence, files listed in the snapshot can be backed up stably. Record each file's path, size, and digest. If an image is missing, fail the backup and report it in logs; do not mark the backup complete.
+4. For same-disk snapshots, hard-link immutable media and independently copy the database snapshot to avoid duplicating every photo across 14 days. If the filesystem does not support hard links, estimate capacity before using copies. The production application must never overwrite a media file in place.
+5. After manifest, database-integrity, and image-digest checks pass, atomically mark the backup complete, then apply retention. A failed backup must not replace the previous successful backup.
 
-ZIP 导出同样先取得一致的记录/媒体清单，期间通过维护锁防止相关文件被清理，并设置导出并发和时长上限；不能让长时间下载持有数据库写事务。
+ZIP export similarly obtains a consistent record/media manifest, uses the maintenance lock to prevent cleanup of those files, and enforces export concurrency and duration limits. A long download must not hold a database write transaction.
 
-硬链接减少重复占用，但不能抵御整盘丢失或底层文件损坏。首版继续沿用本机备份，并提供完整下载导出；异机备份建议后续接入用户选定的位置，不宣称已有异机保障。
+Hard links reduce duplicate allocation but do not protect against whole-disk loss or underlying file corruption. The initial release continued using local backups and offered complete download export. Off-machine backup was recommended for a later user-selected destination and was not claimed to exist at that time.
 
-首次上线必须在隔离目录恢复一份真实生成的备份，用合成记录与照片检查数据库、封面、标准主图、回收站和余料状态。生产恢复前确认时点，停止写入并保存当前可恢复状态，再切换完整的数据目录；迁移过的数据库要与对应版本程序一起核对。
+Before first launch, restore one genuinely generated backup in an isolated directory and use synthetic records and photos to verify the database, covers, standard main images, recycle bin, and remnant states. Before production recovery, confirm the restore point, stop writes, preserve the current recoverable state, and then switch the complete data directory. Verify a migrated database together with the corresponding program version.
 
-## 11. 实施顺序与验收
+## 11. Implementation Sequence and Acceptance
 
-### 阶段 A：先验证高风险环节
+### Stage A: Validate High-Risk Areas First
 
-在隔离开发/测试环境制作最小拍照上传流程，使用 JPEG、PNG、WebP、iPhone HEIC、横竖方向、宽色域和 48 MP 样本检查：
+In an isolated development/test environment, create the minimal camera-upload flow. Use JPEG, PNG, WebP, iPhone HEIC, portrait/landscape orientation, wide-gamut, and 48 MP samples to check:
 
-- iPhone Safari 与 Android Chrome 在 HTTPS 入口上的系统拍照/相册选择、取消和返回；不以桌面模拟器代替实机结果。
-- Ubuntu 图片依赖能解码 HEIC 主图，方向正常，去掉 GPS，标准图能被主流浏览器显示。
-- 图片处理峰值内存、时间、并发限制和失败清理可接受，原有服务维持正常。
+- System camera/photo-library selection, cancel, and return on iPhone Safari and Android Chrome through the HTTPS entry point. Do not substitute a desktop simulator for real-device results.
+- Ubuntu image dependencies can decode the primary HEIC image, preserve correct orientation, remove GPS, and produce standard images viewable by mainstream browsers.
+- Peak image-processing memory, duration, concurrency limits, and failure cleanup are acceptable while existing services remain healthy.
 
-若常用设备无法完成拍照流程，或 HEIC/资源验证不通过，先调整拍照/解码方案并更新本方案，再把相应能力列入可交付范围；不能以“支持文件上传”替代“手机可以拍照”的验收要求。
+If common devices cannot complete the camera flow, or HEIC/resource validation fails, first adjust the camera/decoder approach and update this plan before listing the capability as deliverable. “Supports file upload” is not a substitute for the acceptance requirement “the phone can take a photo.”
 
-### 阶段 B：完成核心闭环
+### Stage B: Complete the Core Loop
 
-初始化仓库和工程，实现 schema、幂等与版本冲突、照片生命周期、布料列表/新增/详情/编辑、材质尺寸和余料、搜索筛选、回收站与导出；补齐手机和电脑布局。全部业务验证使用合成数据。
+Initialize the repository and project. Implement schema, idempotency and version conflicts, the photo lifecycle, fabric list/create/details/edit, material dimensions and remnants, search and filters, recycle bin, and export. Complete both phone and desktop layouts. All business verification uses synthetic data.
 
-### 阶段 C：补齐运行与交付
+### Stage C: Complete Operations and Delivery
 
-实现一致性备份与隔离恢复、受限 本机发布、部署模板、诊断与回退文档；完成目标环境部署、旧应用回归检查与共享清单/服务器文档同步。阶段均在方案获准后执行。
+Implement consistent backup and isolated recovery, restricted local-machine release, deployment templates, diagnostics, and rollback documentation. Complete target-environment deployment, existing-application regression checks, and synchronization of the shared inventory and server documentation. Every stage begins only after the plan is approved.
 
-### 上线验收清单
+### Launch Acceptance Checklist
 
-| 范围 | 通过条件 |
+| Scope | Pass condition |
 | --- | --- |
-| 手机布局 | 至少 375×667、390×844 和更窄 320 px 宽度无横向溢出；软键盘、安全区和保存按钮可用 |
-| 桌面布局 | 1440×900 下卡片、筛选、表单和图库合理利用空间；键盘操作可完成录入 |
-| 真实手机 | iOS Safari 与 Android Chrome 分别通过拍照、相册多选、取消、旋转照片和实际上传 |
-| 库存规则 | cm/m 换算准确，多组布片、不规则余料、未知尺寸与已用完状态一致；筛选基于剩余尺寸 |
-| 弱网与并发 | 断网/超时不重复创建；上传部分失败可恢复；两设备冲突可见且不会静默覆盖 |
-| 图片与边界 | 损坏文件、伪装类型、超限像素、HEIC、元数据、处理超时与磁盘不足行为明确；无半成品记录 |
-| 删除与恢复 | 布料和照片进入回收期；恢复完整，过期清理不删除仍被记录或备份引用的文件 |
-| 备份与导出 | 备份与并发上传/删除共存，隔离恢复数据库和照片一致；CSV/ZIP 内容覆盖预期筛选集 |
-| 子路径 | 刷新详情页正常；静态资源、API、媒体及重定向均在 `/fabricworld/` 下正确工作 |
-| 现有项目 | Ledger、FeeTable 健康和主要只读路径正常，内部端口仍只监听 loopback |
+| Phone layout | No horizontal overflow at at least 375×667, 390×844, and the narrower 320 px width; soft keyboard, safe area, and Save button are usable |
+| Desktop layout | At 1440×900, cards, filters, form, and gallery use space appropriately; data entry can be completed from the keyboard |
+| Real phones | iOS Safari and Android Chrome each pass camera, photo-library multiselect, cancel, photo rotation, and real upload |
+| Inventory rules | cm/m conversion is correct; multiple piece groups, irregular remnants, unknown dimensions, and used-up state are consistent; filters use remaining dimensions |
+| Weak network and concurrency | Offline/timeout behavior does not duplicate creation; partial upload failure is recoverable; two-device conflicts are visible and never overwrite silently |
+| Images and boundaries | Corrupt files, disguised types, excessive pixels, HEIC, metadata, processing timeout, and low disk have explicit behavior; no partial record remains |
+| Deletion and recovery | Fabrics and photos enter their retention periods; restoration is complete; expiration cleanup does not delete a file still referenced by a record or backup |
+| Backup and export | Backup coexists with concurrent upload/deletion; isolated recovery restores consistent database and photos; CSV/ZIP contents cover the expected filtered set |
+| Subpath | Detail-page refresh works; assets, API, media, and redirects all work correctly under `/fabricworld/` |
+| Existing projects | Ledger and FeeTable health and primary read-only paths work; internal ports still listen only on loopback |
 
-性能目标以固定数据集、冷/热缓存和记录的测试网络为依据：约 10,000 条合成记录时普通列表/筛选接口 p95 目标低于 300 ms；模拟 Fast 4G 的首屏 LCP 目标低于 2.5 s；单张图片处理在测试集上通常不超过 8 s（不含网络上传），超时可恢复。这些是验收目标，需在图片规格和资源限制确定后实测，不能预先当成结果。
+Performance targets use a fixed dataset, recorded cold/warm caches, and a recorded test network. With approximately 10,000 synthetic records, ordinary list/filter API p95 should be below 300 ms. Simulated Fast 4G initial-view LCP should be below 2.5 s. A single image should usually process within 8 s on the test set, excluding upload time, with recoverable timeout. These are acceptance targets that require measurement after image parameters and resource limits are fixed; they cannot be treated as results in advance.
 
-## 12. 已审核结论
+## 12. Reviewed Conclusions
 
-建议按“共享布料库 + 手机优先 + 本地图片存储 + Vue/Go/SQLite + 系统拍照选择器”进入实施，先验证真实手机拍照和 HEIC，再扩展完整功能。
+The recommendation was to proceed with “shared fabric library + phone-first + local image storage + Vue/Go/SQLite + system camera picker,” validating real-phone photography and HEIC first before expanding the complete feature set.
 
-用户已批准首版范围、共享 HTTPS 入口、处理后照片保留策略和技术路线，仓库可见性改为 public。GitHub public 仓库是已确认决策；源码可见性不改变线上无身份认证的访问方式。
+The user approved the initial scope, shared HTTPS entry point, processed-photo retention policy, and technical route, and changed repository visibility to public. A public GitHub repository is a confirmed decision. Source visibility does not change the online access model without identity authentication.
 
-## 参考
+## References
 
-- [MDN：HTML capture 属性](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/capture)
-- [MDN：getUserMedia 与安全上下文](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)
-- [MDN：仅限安全上下文的能力](https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Secure_Contexts/features_restricted_to_secure_contexts)
-- [libvips 官方说明](https://www.libvips.org/)
-- [libheif 官方说明](https://libheif.org/)
-- [共享服务器维护源](https://github.com/Crashmere/agent-config/tree/main/skills/server-operations)
+- [MDN: HTML capture attribute](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/capture)
+- [MDN: getUserMedia and secure contexts](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia)
+- [MDN: capabilities restricted to secure contexts](https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Secure_Contexts/features_restricted_to_secure_contexts)
+- [Official libvips documentation](https://www.libvips.org/)
+- [Official libheif documentation](https://libheif.org/)
+- [Shared server maintenance source](https://github.com/Crashmere/agent-config/tree/main/skills/server-operations)
 
-公开资料用于确认能力与限制；服务器占用、包候选和应用健康以本轮只读检查为依据，最终兼容性以实施验收为准。
+Public references were used to confirm capabilities and limitations. Server usage, package candidates, and application health came from read-only checks during that planning round. Final compatibility is determined by implementation acceptance.
