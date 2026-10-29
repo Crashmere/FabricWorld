@@ -9,13 +9,19 @@ Image-size boundaries: Nginx accepts requests up to 26 MiB, and the program acce
 ## Runtime Layout
 
 - `/opt/fabricworld/bin/fabricworld`: Linux amd64 program with the web application embedded.
-- `/opt/fabricworld/config/`: unit, backup timer, and Nginx location; managed by root.
+- `/opt/fabricworld/config/`: application/maintenance units, preserved legacy backup timer, and Nginx location; managed by root.
 - `/opt/fabricworld/data/fabricworld.db`: SQLite database; `media/`, `tmp/`, and `maintenance.lock` are in the same directory.
-- `/opt/fabricworld/backups/`: database and media snapshots.
+- `/opt/fabricworld/backups/`: preserved legacy database/media snapshots; no routine NAS backup or upgrade protection is created here.
 - `/opt/fabricworld/docs/`, `AGENTS.md`, and `docs/SOURCE`: copies of committed documentation and its source marker.
 - `/opt/fabricworld/releases/` and `current-commit`: release artifacts and the running commit.
 
 The runtime user is `fabricworld`, and the release user is `fabricworld-deploy`. `data`/`backups` are mode 0700 and their files are 0600; root manages the other directories and the program. The service listens on `127.0.0.1:18082` and is accessed through `/fabricworld/`. No cloud-security-group port is added.
+
+## Application Cleanup
+
+The NAS migration separates existing application cleanup from the disabled native daily backup job. Its dedicated units are `fabricworld-cleanup.service` and `fabricworld-cleanup.timer`; scheduling is enabled only on a host marked `nas`. The timer retains 03:30 Asia/Shanghai with up to five minutes of randomized delay and persistent catch-up. The [shared inventory](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/current-state.md) records actual installation and activation.
+
+The cleanup service runs `fabricworld cleanup --data /opt/fabricworld/data` as `fabricworld`, with writes limited to `data`, a 256 MiB memory limit, 50% CPU quota, Nice 10, and a 15-minute timeout. It takes the shared maintenance lock, then the exclusive application deployment lock before applying the existing trash/photo/operation cleanup rules. Shared `/etc/tmpfiles.d/server-maintenance.conf` prepares these root-owned 0644 lock files before the units run. Portal registers these maintenance units so full cold backups coordinate their writer pause with the same locks. This operation generates no snapshot and prunes no backup or release material; native backup timers remain disabled on NAS.
 
 ## First Installation
 
@@ -60,12 +66,12 @@ Test browsers may be installed in a project-ignored directory:
 
 NAS routine backups are manual complete compressed archives to an explicitly identified external volume through Portal or the agent. Pause business/background services, cold-copy all data/config/program state and media/work files to external staging, resume previously running services, then compress and verify that immutable copy. NAS has no routine internal staging/archive, native daily schedule, or automatic backup deletion.
 
-Native packages remain a compatibility format: consistent SQLite plus image hard links and a SHA-256 manifest. The native daily job also performs cleanup and is not the NAS full-backup path. Existing hard-linked snapshots must not be edited because they share immutable production image inodes. Only completed native snapshots have `manifest.json`.
+Native packages remain a compatibility format: consistent SQLite plus image hard links and a SHA-256 manifest. The disabled legacy daily job combines cleanup and backup; it is not the NAS full-backup path. Existing hard-linked snapshots must not be edited because they share immutable production image inodes. Only completed native snapshots have `manifest.json`. Run native compatibility checks on an isolated data copy:
 
 ```sh
 systemctl status fabricworld-backup.timer
 journalctl -u fabricworld-backup.service -n 50 --no-pager
-runuser -u fabricworld -- /opt/fabricworld/bin/fabricworld backup --data /opt/fabricworld/data --out /opt/fabricworld/backups/manual-UNIQUE
+runuser -u fabricworld -- /opt/fabricworld/bin/fabricworld backup --data /path/to/isolated-data --out /path/to/new-native-snapshot
 ```
 
 Native output directories must not exist; a lock conflict is failure, not a completed backup. The verified 2026-09-27 maintenance-computer archive and independent ALI Cloud Backup remain preserved in shared current-state. NAS upgrades instead use the root-private complete cold protection in [DEPLOYMENT.md](DEPLOYMENT.md), removed only after runtime and previous-row/file preservation pass.
@@ -110,11 +116,11 @@ Daily cleanup indefinitely retains `operations` whose fingerprint begins with `l
 
 Material percentages are stored as an optional JSON field in existing schema v1 and require no table migration. The new service remains compatible with old clients whose save requests omit the percentage field. The old service does not recognize the field; editing a record after rollback loses its percentages. During rollback, pause details editing and preserve the pre-release backup.
 
-The independent material catalog uses the added `material_catalog(name,id)` table, allowing zero-use names to persist. Fabric counts are still calculated from current records. The catalog extension creates this compatible table. A complete `migrate` also adds finished-work structures while preserving `user_version=1` and all fabric/photo data. First installation creates the table directly. When releasing against an old database, use the old program to back it up, then run candidate `migrate` followed by `check` (the installed release script already includes this sequence). Removal also updates recycle-bin records; restoring a fabric does not bring back a removed material. Operation results are retained for seven days. For an unknown result, first query or retry with the original key. If the set version is stale, recheck the current catalog. The preceding program version can read the extended v1 database while ignoring the independent catalog table. During rollback, zero-use names are not displayed, but their persistent data is not cleared. Rollback code does not undo completed bulk removal, and history retains before/after snapshots. After restoring a pre-upgrade backup, explicitly run `migrate` before starting the new version. Production acceptance checks only the catalog, pages, and health in read-only mode; bulk-write regression uses an isolated synthetic database.
+The independent material catalog uses the added `material_catalog(name,id)` table, allowing zero-use names to persist. Fabric counts are still calculated from current records. The catalog extension creates this compatible table. A complete `migrate` also adds finished-work structures while preserving `user_version=1` and all fabric/photo data. First installation creates the table directly. When releasing against an old database on NAS, follow [DEPLOYMENT.md](DEPLOYMENT.md): protect complete cold state, rehearse candidate `migrate` and `check` on a disposable copy, then apply them to the protected live data. Removal also updates recycle-bin records; restoring a fabric does not bring back a removed material. Operation results are retained for seven days. For an unknown result, first query or retry with the original key. If the set version is stale, recheck the current catalog. The preceding program version can read the extended v1 database while ignoring the independent catalog table. During rollback, zero-use names are not displayed, but their persistent data is not cleared. Rollback code does not undo completed bulk removal, and history retains before/after snapshots. After restoring a pre-upgrade backup, explicitly run `migrate` before starting the new version. Production acceptance checks only the catalog, pages, and health in read-only mode; bulk-write regression uses an isolated synthetic database.
 
 ## Finished-Work Module Upgrade
 
-Finished works use the same database and `media` directory. They add no runtime, Nginx configuration, unit, port, permission, or backup task. The added `works`/`work_changes`, `media.work_id`, and compatibility protections require explicit migration. After production authorization, use the existing local-machine release script's backup → `migrate` → `check` → start sequence. Cleanup also covers the finished-work recycle bin and photos. During rollback, the old program can still read and write fabrics while ignoring finished works. Photo-protection triggers prevent old cleanup from deleting finished-work photos, and backups still cover all media. See [WORKS.md](WORKS.md) for the complete procedure and limitations.
+Finished works use the same database and `media` directory. They add no runtime, Nginx configuration, unit, port, permission, or backup task. The added `works`/`work_changes`, `media.work_id`, and compatibility protections require explicit migration. After production authorization, use the NAS release flow's complete cold protection, independent candidate rehearsal, protected live `migrate`/`check`, startup, and runtime/data acceptance. Cleanup also covers the finished-work recycle bin and photos. During rollback, the old program can still read and write fabrics while ignoring finished works. Photo-protection triggers prevent old cleanup from deleting finished-work photos, and backups still cover all media. See [WORKS.md](WORKS.md) for the complete procedure and limitations.
 
 ## Documentation Synchronization
 

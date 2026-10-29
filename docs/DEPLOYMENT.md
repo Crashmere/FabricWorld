@@ -29,6 +29,8 @@ Switching begins only after upload and verification succeed. On `nas`, the share
 
 After cold protection, the NAS script rehearses `migrate` and `check` against the independent copy, then applies the explicit migration to stopped live data. Verify authorized schema transformations and compatibility first; strict row/file preservation rejects unexplained changes and retains the recovery copy. For Ledger-integration updates, release FabricWorld before Ledger.
 
+`fabricworld-cleanup.service`/`.timer` are separately installed runtime configuration and must be registered in `deploy/portal.json`. Only a host marked `nas` enables cleanup scheduling; the native backup timer remains disabled. A program-only deployment does not install or change these units. During existing-data migration, install the reviewed units without running `init`, and verify their lock/sandbox contract before authorized activation; see [OPERATIONS.md](OPERATIONS.md).
+
 ## Rollback and Troubleshooting
 
 ```sh

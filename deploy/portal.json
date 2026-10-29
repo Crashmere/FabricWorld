@@ -11,7 +11,9 @@
   "units": [
     "fabricworld.service",
     "fabricworld-backup.service",
-    "fabricworld-backup.timer"
+    "fabricworld-backup.timer",
+    "fabricworld-cleanup.service",
+    "fabricworld-cleanup.timer"
   ],
   "database": "/opt/fabricworld/data/fabricworld.db",
   "backupKind": "media",
