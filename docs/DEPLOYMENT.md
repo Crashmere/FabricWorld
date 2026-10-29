@@ -6,6 +6,8 @@ GitHub is only a source-code and configuration backup; Actions are disabled. Com
 
 ## Routine Use
 
+`make deploy` targets `nas` and its dedicated deployment key. `vps` provides public HTTPS on port 8443; temporary `ali` access forwards to the same NAS application. Public-check overrides and host-specific keys are maintained in the shared release guide. Explicit legacy ALI deployment must not create a second writer after migration.
+
 ```sh
 # Exercise this change locally, then commit and push the source.
 git add <files-changed-in-this-task>
@@ -23,9 +25,9 @@ Use `make portal` to update only portal information. It preflights and synchroni
 
 Use the restricted `fabricworld-deploy` identity; its private key exists only on the maintenance computer. To create the account for the first time, use `deploy/setup-deploy.sh <local-release-public-key>`; do not reinitialize an existing account. The forced command accepts only `deploy`, `portal-check`, and `portal`, and `sudo` permits only this application's fixed release script.
 
-Switching begins only after upload and verification succeed. Preserve the pre-upgrade backup and `previous`, and restore the old program if the health check fails. A routine release does not carry production data. An administrator explicitly synchronizes units, Nginx, environment configuration, authorization, and release scripts from source; documentation uses the shared `sync-docs.sh`.
+Switching begins only after upload and verification succeed. On `nas`, the shared helper cold-copies complete data/config/program state, including media and retained work, to `/var/lib/server-upgrades/fabricworld/<release>/`. The root-private recovery copy is separate from the candidate's independent work copy. Runtime and complete previous SQLite rows/files must pass verification before only this upgrade's copy is deleted; failure or uncertainty retains it. `previous` remains the program rollback artifact. Normal releases do not transfer production data. Administrators install units, Nginx, environment, authorization, and scripts from source; documentation uses `SYNC_HOST=nas` with the shared `sync-docs.sh`.
 
-After backup, the release script runs the candidate's `migrate` and `check` commands. For schema-related updates, verify compatibility first. For Ledger-integration updates, release FabricWorld before Ledger.
+After cold protection, the NAS script rehearses `migrate` and `check` against the independent copy, then applies the explicit migration to stopped live data. Verify authorized schema transformations and compatibility first; strict row/file preservation rejects unexplained changes and retains the recovery copy. For Ledger-integration updates, release FabricWorld before Ledger.
 
 ## Rollback and Troubleshooting
 
@@ -36,4 +38,4 @@ make rollback COMMIT=<explicitly-selected-full-old-commit>
 
 Rollback reuses a verified artifact retained on the local machine and still performs a backup and health check. First confirm that the old program is compatible with current data. Rolling back the program does not restore the database, photos, or device state. To restore data, first choose a restore point and preserve the current state, then follow the restore procedure in [OPERATIONS.md](OPERATIONS.md).
 
-On the server, `/opt/fabricworld/releases/` retains the program, `previous`, `metadata`, `result`, and `recovery`; `current-commit` records the actual running source. `.local/releases/<commit>/last-deployment.json` records the local release result. Upload failures usually occur before the service has stopped; for failures after a switch, inspect `result` and the journal first. Server release history and routine pre-release snapshots rotate according to [automatic release-artifact retention](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/retention.md); local builds, manual backups, migrations, and portal export packages are excluded.
+On NAS, `/opt/fabricworld/releases/` retains the program, `previous`, metadata, result/recovery, and upgrade-acceptance evidence; `current-commit` records the actual running source. `.local/releases/<commit>/last-deployment.json` records the local result. After a failed switch, inspect the result, journal, and retained private snapshot. NAS does not automatically prune uncertain upgrade copies. [Legacy automatic retention](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/retention.md) applies to `ali`, not the NAS recovery namespace.

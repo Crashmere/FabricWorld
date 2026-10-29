@@ -15,6 +15,14 @@ if [[ $EUID -ne 0 || $# -ne 2 || ! $1 =~ ^[0-9a-f]{40}$ || ! $2 =~ ^[0-9a-f]{64}
 commit=$1
 expected=$2
 app=/opt/fabricworld
+nas=false
+upgrade=/opt/server-context/scripts/upgrade-state.py
+if [[ -r /etc/server-maintenance-host && $(< /etc/server-maintenance-host) == nas ]]; then
+  nas=true
+  test -f "$upgrade"
+  exec 8>/run/lock/server-maintenance.lock
+  flock -s -n 8 || { printf 'A full backup or maintenance operation is running.\n' >&2; exit 75; }
+fi
 exec 9>/run/lock/fabricworld-deploy.lock
 flock -n 9 || { echo 'Another release is running.' >&2; exit 75; }
 test -f "$app/data/fabricworld.db"
@@ -59,7 +67,14 @@ printf 'commit=%s\nsha256=%s\n' "$commit" "$expected" > "$release/metadata"
 backup="$app/backups/before-deploy-$(basename "$release")"
 stopped=true
 systemctl stop fabricworld
-runuser -u fabricworld -- timeout 180 "$app/bin/fabricworld" backup --data "$app/data" --out "$backup"
+if [[ $nas == true ]]; then
+  candidate_data=$(python3 "$upgrade" begin --app fabricworld --release "$(basename "$release")")
+  backup="/var/lib/server-upgrades/fabricworld/$(basename "$release")"
+  runuser -u fabricworld -- timeout 30 "$release/fabricworld" migrate --data "$candidate_data"
+  runuser -u fabricworld -- timeout 30 "$release/fabricworld" check --data "$candidate_data"
+else
+  runuser -u fabricworld -- timeout 180 "$app/bin/fabricworld" backup --data "$app/data" --out "$backup"
+fi
 # Uploaded executable always runs as the application identity.
 runuser -u fabricworld -- timeout 30 "$release/fabricworld" migrate --data "$app/data"
 runuser -u fabricworld -- timeout 30 "$release/fabricworld" check --data "$app/data"
@@ -68,6 +83,13 @@ replaced=true
 mv -f "$app/bin/fabricworld.next" "$app/bin/fabricworld"
 systemctl start fabricworld
 wait_healthy
+if [[ $nas == true ]]; then
+  systemctl stop fabricworld
+  python3 "$upgrade" verify --app fabricworld --release "$(basename "$release")"
+  systemctl start fabricworld
+  wait_healthy
+fi
 printf '%s\n' "$commit" > "$app/current-commit"
 chmod 0644 "$app/current-commit"
+if [[ $nas == true ]]; then python3 "$upgrade" accept --app fabricworld --release "$(basename "$release")"; fi
 printf 'Deployed %s.\n' "$commit"

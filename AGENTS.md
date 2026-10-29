@@ -14,8 +14,8 @@ Agent instructions, maintenance documentation, technical plans, handoffs, and si
 - Use the shared custom component for simple dropdown options and input suggestions. Keep the system picker for complex controls such as dates and times. Switch between the exact UI sections `布料库` and `成品集` only in the top bar; do not duplicate these entries in the More menu. See [docs/CONTROLS.md](docs/CONTROLS.md) for interaction and animation conventions.
 - Writes must support idempotency and version-conflict handling. Tests use isolated synthetic data; production acceptance is read-only by default.
 - Explicitly record when the real phone camera has not been verified.
-- Use `server-operations` before deployment, and explicitly read `ssh ali 'cat /opt/AGENTS.md'`. This project maintains only its own location, units, data, and deployment identity.
-- Update the corresponding `docs` and `deploy` materials. Add new shared state to `agent-config`. After pushing, run `agent-config`'s `skills/server-operations/scripts/sync-docs.sh FabricWorld` to synchronize the server copy.
+- Use `server-operations` and read `ssh nas 'cat /opt/AGENTS.md'` before application work; read that entry point on `vps` or temporary `ali` before gateway work. This project owns only its location, units, data, and deployment identity; current-state records activation.
+- Update affected `docs` and `deploy` sources. After pushing managed documentation, use `SYNC_HOST=nas` with agent-config's `skills/server-operations/scripts/sync-docs.sh FabricWorld`; synchronize shared gateway context separately.
 - Follow only the authorization table in `server-operations`'s `SKILL.md` to decide which tasks to finish and report afterward and which require confirmation first. Documentation maintenance and synchronization do not require advance confirmation.
 - The GitHub repository is public. Production addresses, photos, databases, backups, and credentials must not enter Git.
 

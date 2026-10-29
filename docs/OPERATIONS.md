@@ -2,7 +2,7 @@
 
 The public entry point uses HTTPS with a trusted IP certificate and preserves the existing `/fabricworld/` path. Public HTTP returns 308; API clients should use HTTPS directly. Nginx overwrites `X-Forwarded-Proto`. Write-origin validation trusts proxy headers only from loopback addresses and continues to reject cross-site origins. See [shared HTTPS operations](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/https.md) (server copy: `/opt/server-context/references/https.md`) for certificates, renewal, rollback, and whole-machine acceptance checks. This project's backend and release checks retain local HTTP. The `127.0.0.1:80` proxy-check entry point is not publicly reachable. The public entry point uses ServerPortal's centralized device authentication: first enter the passphrase at `/portal/login` to authorize the device, then use the same-origin Secure/HttpOnly Cookie. Unauthorized API requests return 401. Local release checks and service-to-service calls remain available.
 
-Before maintenance, use `server-operations` and explicitly run `ssh ali 'cat /opt/AGENTS.md'`. Shared Nginx and `server-context` do not belong to this project. Obtain the real host address from trusted SSH configuration; do not write it into the public repository.
+FabricWorld's application target is `nas`; `vps` exposes public HTTPS port 8443 and temporary `ali` access forwards to the same instance. NAS provides local-CA HTTPS for home devices. Use `server-operations`, read the target's remote `/opt/AGENTS.md`, and consult current-state for activation. Shared Nginx and `server-context` do not belong to this project; addresses remain in trusted SSH configuration.
 
 Image-size boundaries: Nginx accepts requests up to 26 MiB, and the program accepts individual images up to 25 MiB; the entry-point margin covers multipart overhead. If an image larger than 1 MiB returns 500 before reaching the program, see [centralized authentication incorrectly blocking large requests](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#统一认证误拦大请求). The shared correction must preserve this application's upload limit.
 
@@ -58,7 +58,9 @@ Test browsers may be installed in a project-ignored directory:
 
 ## Backups
 
-Run daily at 03:30 China Standard Time with 0–5 minutes of randomized delay, retaining 14 daily backups. The backup unit's writable path must cover all of `/opt/fabricworld`; see [photo hard-link backup failure under the systemd sandbox](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#systemd-沙箱下照片硬链接备份失败) for the reason. The task first cleans expired recycle-bin records, staged images, and operation results, then generates a consistent snapshot and image hard links. The file manifest includes SHA-256 hashes. Do not edit or overwrite images inside a snapshot: they share inodes with immutable production images. Only a complete backup has `manifest.json`.
+NAS routine backups are manual complete compressed archives to an explicitly identified external volume through Portal or the agent. Pause business/background services, cold-copy all data/config/program state and media/work files to external staging, resume previously running services, then compress and verify that immutable copy. NAS has no routine internal staging/archive, native daily schedule, or automatic backup deletion.
+
+Native packages remain a compatibility format: consistent SQLite plus image hard links and a SHA-256 manifest. The native daily job also performs cleanup and is not the NAS full-backup path. Existing hard-linked snapshots must not be edited because they share immutable production image inodes. Only completed native snapshots have `manifest.json`.
 
 ```sh
 systemctl status fabricworld-backup.timer
@@ -66,7 +68,7 @@ journalctl -u fabricworld-backup.service -n 50 --no-pager
 runuser -u fabricworld -- /opt/fabricworld/bin/fabricworld backup --data /opt/fabricworld/data --out /opt/fabricworld/backups/manual-UNIQUE
 ```
 
-The backup output directory must not exist. A lock conflict is a failure; inspect logs and retry rather than fabricating success. Trigger the daily job manually with `systemctl start fabricworld-backup.service`. An ordinary release also generates a `before-deploy` snapshot. Release history and these snapshots rotate under the shared release-retention policy and do not count toward the 14 daily backups. Monitor `df`/`du`; a local snapshot is not an off-machine backup. On 2026-09-27, a separate all-application data archive containing this project's database and photos was downloaded to the maintenance computer and verified; see the [shared backup notes](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/current-state.md#手工数据归档). This application's scripts do not initiate off-machine synchronization. The server also has Alibaba Cloud file backup; see [host cloud backup](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/current-state.md#云备份) for scope, 30-day retention, and restore limitations.
+Native output directories must not exist; a lock conflict is failure, not a completed backup. The verified 2026-09-27 maintenance-computer archive and independent ALI Cloud Backup remain preserved in shared current-state. NAS upgrades instead use the root-private complete cold protection in [DEPLOYMENT.md](DEPLOYMENT.md), removed only after runtime and previous-row/file preservation pass.
 
 ## Isolated Recovery and Production Recovery
 
@@ -79,7 +81,7 @@ fabricworld check --data /path/to/new-restore-directory
 fabricworld serve --data /path/to/new-restore-directory --listen 127.0.0.1:19082 --with-prefix
 ```
 
-`restore` validates the manifest, restricts relative paths, copies files independently, and rejects an existing target. The runtime identity must be able to access both the backup source's parent and the restore target's parent. Verify photos, covers, recycle-bin records, dimensions, and records. For production recovery, first confirm the restore point and data-loss boundary, stop the service, preserve the current data directory, restore and check into an independent directory, switch directories, set the correct owner, and start the service. Do not treat program rollback as database rollback.
+The native `restore` validates its manifest, restricts relative paths, copies files independently, and rejects an existing target. Full NAS cold archives are instead extracted into an isolated directory and verified before the agent restores the complete application subtree. Confirm the recovery point and later data loss; pause writes, preserve current state, verify photos/covers/recycle-bin records/dimensions, set correct ownership, and restart for read-only acceptance. Keep NAS native scheduling disabled. Program rollback is not data restoration.
 
 ## Diagnostics and Verification
 
@@ -116,7 +118,7 @@ Finished works use the same database and `media` directory. They add no runtime,
 
 ## Documentation Synchronization
 
-After committing and pushing documentation, run `~/agent-config/skills/server-operations/scripts/sync-docs.sh FabricWorld`. It handles drift checks, installation under `/opt/fabricworld`, per-file verification, `docs/SOURCE`, and cleanup; see `server-operations` maintenance documentation for usage. After a shared-inventory change, run the same script without arguments to synchronize `/opt/server-context` and `/opt/AGENTS.md` as well.
+After pushing managed documentation, run `SYNC_HOST=nas ~/agent-config/skills/server-operations/scripts/sync-docs.sh FabricWorld`; it verifies drift/files and records `docs/SOURCE`. Shared gateway context synchronizes to its own hosts.
 
 ## ServerPortal Integration Materials
 
@@ -128,7 +130,7 @@ Source-code or database-behavior changes cannot use this option instead of a pro
 
 When a data root, media behavior, backup format, unit, port, or access path changes, maintain the declaration and corresponding documentation in the same commit, update the shared inventory, and verify resource coverage. The portal automatically reads files, media, database tables, and systemd state. The maintenance agent must explicitly update directory purposes, API descriptions, and permission boundaries. See [portal maintenance](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/portal.md) for the shared protocol, failure handling, and new-application integration.
 
-The portal at `/portal/` centrally protects public access. The release script checks application health over loopback, and a local-machine release expects an unauthorized public check to return 401. Device authorization remains valid until explicit revocation, and shared Nginx renews the Cookie on valid requests. If this application adds `add_header`, it must preserve shared `Set-Cookie` forwarding; see the shared portal-maintenance documentation for rules and acceptance criteria. Portal backup uses this application's native consistent snapshot. Per user request, full end-to-end restore acceptance is deferred; this maintenance does not automatically resume a download or restore.
+Portal protects both HTTPS entrances; loopback release checks remain private and public unauthorized APIs return 401. Device grants persist until revocation; preserve shared cookie-renewal headers. NAS Portal backups cold-copy complete state to external staging rather than relying on the native media snapshot. Recovery remains agent-operated after confirming the recovery point.
 
 ## Phone Home-Screen Icon
 
@@ -140,6 +142,6 @@ This project is for personal use: validate each change locally before release; t
 
 See [Local-Machine Release and Rollback](DEPLOYMENT.md) for the complete flow. GitHub stores source code only. Locally, `make release` builds and `make deploy` updates production; documentation synchronizes separately.
 
-## Automatic Release-Artifact Cleanup
+## Release-Material Cleanup
 
-Every day at 05:00 China Standard Time, the server follows [automatic release-artifact retention](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/retention.md) to keep the latest three successful releases and the latest five complete pre-release backups, while protecting the current version, its corresponding backup, and failed batches awaiting review. `server-operations` owns the shared implementation, lock, receipts, preview, and disable commands. This project's deployment retains the release script's `recovery` markers and the daily backup's `flock` entry point. On first installation, create `/run/lock/ali-release-retention.lock` according to the shared documentation before enabling the backup timer. Daily and manual backups, business data, portal exports, and maintenance-computer build artifacts are outside this automatic cleanup scope.
+NAS has no daily backup/release pruning. Successful upgrade acceptance removes only its private `/var/lib/server-upgrades/fabricworld/<release>/` and candidate work copy; failed or uncertain copies remain for the agent. Existing ALI and maintenance-computer backups are untouched. [Legacy retention](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/retention.md) is not enabled for NAS upgrades.
