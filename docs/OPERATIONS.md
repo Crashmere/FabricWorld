@@ -71,8 +71,6 @@ NAS routine backups are manual complete compressed archives to an explicitly ide
 Native packages remain a compatibility format: consistent SQLite plus image hard links and a SHA-256 manifest. The disabled legacy daily job combines cleanup and backup; it is not the NAS full-backup path. Existing hard-linked snapshots must not be edited because they share immutable production image inodes. Only completed native snapshots have `manifest.json`. Run native compatibility checks on an isolated data copy:
 
 ```sh
-systemctl status fabricworld-backup.timer
-journalctl -u fabricworld-backup.service -n 50 --no-pager
 runuser -u fabricworld -- /opt/fabricworld/bin/fabricworld backup --data /path/to/isolated-data --out /path/to/new-native-snapshot
 ```
 
@@ -94,7 +92,7 @@ The native `restore` validates its manifest, restricts relative paths, copies fi
 ## Diagnostics and Verification
 
 ```sh
-systemctl status fabricworld fabricworld-backup.timer
+systemctl status fabricworld fabricworld-cleanup.timer
 journalctl -u fabricworld -n 100 --no-pager
 curl --fail http://127.0.0.1:18082/healthz
 curl --fail http://127.0.0.1/fabricworld/healthz
