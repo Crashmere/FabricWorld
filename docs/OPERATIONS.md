@@ -6,6 +6,8 @@ FabricWorld's application target is `nas`; `vps` exposes public HTTPS port 8443 
 
 Image-size boundaries: Nginx accepts requests up to 26 MiB, and the program accepts individual images up to 25 MiB; the entry-point margin covers multipart overhead. If an image larger than 1 MiB returns 500 before reaching the program, see [centralized authentication incorrectly blocking large requests](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/common-issues.md#统一认证误拦大请求). The shared correction must preserve this application's upload limit.
 
+For slow photo uploads, follow [Upload throughput and request limits](https://github.com/Crashmere/agent-config/blob/main/skills/server-operations/references/conventions.md#upload-throughput-and-request-limits), also at `/opt/server-context/references/conventions.md` on NAS. This application's Nginx location retains default request buffering; image validation and processing run before the response confirms completion, so distinguish transmission time from server processing time.
+
 ## Runtime Layout
 
 - `/opt/fabricworld/bin/fabricworld`: Linux amd64 program with the web application embedded.
