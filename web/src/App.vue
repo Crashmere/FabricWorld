@@ -52,7 +52,7 @@ onUnmounted(() => {
 </script>
 <template>
   <header class="site-header">
-    <RouterLink class="brand" to="/" aria-label="FabricWorld 布料库">
+    <RouterLink class="brand" to="/" aria-label="FabricWorld">
       <img class="brand-mark" :src="brandIcon" width="40" height="40" alt="" />
       <span>Fabric<span class="brand-light">World</span></span>
     </RouterLink>
