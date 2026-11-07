@@ -38,8 +38,12 @@ function openPhoto(event: MouseEvent) {
 }
 async function load() {
   loading.value = true;
+  error.value = "";
   try {
-    fabric.value = await request("fabrics/" + route.params.id);
+    const photoId = fabric.value?.photos[selected.value]?.id;
+    const next = await request<Fabric>("fabrics/" + route.params.id);
+    fabric.value = next;
+    selected.value = Math.max(0, next.photos.findIndex(photo => photo.id === photoId));
   } catch (e) {
     error.value = (e as Error).message;
   } finally {
@@ -104,7 +108,8 @@ onMounted(() => { void load(); void loadWorks(); });
     <div v-if="error" class="error-banner" role="alert">
       {{ error }}<button @click="load">刷新</button>
     </div>
-    <p v-if="loading" class="loading-text">正在展开这块布料…</p>
+    <div v-if="loading && fabric" class="refresh-progress" role="status" aria-label="正在更新布料" />
+    <p v-if="loading && !fabric" class="loading-text">正在展开这块布料…</p>
     <template v-else-if="fabric"
       ><div v-if="fabric.deletedAt" class="info-banner">
         这条布料已在 {{ dateText(fabric.deletedAt) }} 移入回收站。<button

@@ -42,7 +42,13 @@ async function mutate(action: Operation["action"]) {
 }
 async function load() {
   loading.value = true;
-  try { w.value = await request<Work>("works/" + route.params.id); selected.value = 0; }
+  error.value = "";
+  try {
+    const photoId = w.value?.photos[selected.value]?.id;
+    const next = await request<Work>("works/" + route.params.id);
+    w.value = next;
+    selected.value = Math.max(0, next.photos.findIndex(photo => photo.id === photoId));
+  }
   catch (e) { error.value = (e as Error).message; }
   finally { loading.value = false; }
 }
@@ -64,7 +70,8 @@ onMounted(async () => {
     <RouterLink class="back-link" :to="w?.deletedAt ? '/works/trash' : '/works'"><Icon name="back" />{{ w?.deletedAt ? '返回成品回收站' : '返回成品集' }}</RouterLink>
     <div v-if="error" class="error-banner" role="alert">{{ error }}<button :disabled="busy" @click="load">刷新记录</button></div>
     <div v-if="pending" class="info-banner work-recovery"><p>上次操作结果尚未确认。</p><button :disabled="busy" @click="resolve">查询上次结果</button><button :disabled="busy" @click="mutate(pending.action)">按原提交重试</button></div>
-    <p v-if="loading" class="loading-text">正在展开这件作品…</p>
+    <div v-if="loading && w" class="refresh-progress" role="status" aria-label="正在更新成品" />
+    <p v-if="loading && !w" class="loading-text">正在展开这件作品…</p>
     <template v-else-if="w">
       <div v-if="w.deletedAt" class="info-banner">成品已于 {{ dateText(w.deletedAt) }} 移入回收站。<button :disabled="busy || Boolean(pending)" @click="mutate('restore')">恢复成品</button></div>
       <div class="detail-layout">

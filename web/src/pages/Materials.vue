@@ -8,6 +8,7 @@ type Result = { name: string; affected?: number };
 type Pending = { material: Material; operationKey: string; action?: "add" | "remove" };
 const items = ref<Material[]>([]);
 const loading = ref(true), busy = ref(false), error = ref(""), actionError = ref(""), search = ref("");
+const loaded = ref(false);
 const newMaterial = ref("");
 const pending = ref<Pending | null>(null), uncertain = ref(false);
 const storageKey = "fabricworld:material-removal";
@@ -20,7 +21,7 @@ const filtered = computed(() => items.value.filter(item => item.name.toLocaleLow
 async function load() {
   loading.value = true;
   error.value = "";
-  try { items.value = await request<Material[]>("materials"); }
+  try { items.value = await request<Material[]>("materials"); loaded.value = true; }
   catch (e) { error.value = (e as Error).message; }
   finally { loading.value = false; }
 }
@@ -49,10 +50,10 @@ async function completed(result: Result) {
   pending.value = null;
   if (wasAdding) {
     newMaterial.value = "";
-    search.value = result.name;
   }
   toast(wasAdding ? "已添加材质“" + result.name + "”" : "已移除材质“" + result.name + "”，更新了 " + result.affected + " 条布料");
   await load();
+  if (wasAdding && !error.value) search.value = result.name;
 }
 async function submit() {
   if (!pending.value || busy.value) return;
@@ -119,8 +120,9 @@ onMounted(async () => {
     </form>
     <p class="field-hint material-count-hint">数量包含回收站中的布料。同一条布料含多种材质时，会分别计入。</p>
     <label class="material-search"><span class="sr-only">搜索材质</span><input v-model="search" type="search" maxlength="40" placeholder="搜索材质名称" /></label>
-    <p v-if="loading" class="loading-text">正在加载材质…</p>
-    <ul v-else-if="filtered.length" class="material-list">
+    <div v-if="loading && loaded" class="refresh-progress" role="status" aria-label="正在更新材质" />
+    <p v-if="loading && !loaded" class="loading-text">正在加载材质…</p>
+    <ul v-else-if="filtered.length" class="material-list" :aria-busy="loading" :inert="loading || !!error">
       <li v-for="item in filtered" :key="item.name" class="material-row">
         <div class="material-info">
           <h2>{{ item.name }}</h2>
