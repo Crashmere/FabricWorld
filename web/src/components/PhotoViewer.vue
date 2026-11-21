@@ -82,7 +82,14 @@ async function saveRotation() {
     const result = await write<RotationResult>("media/" + props.photoId + "/rotate", "POST", body, operationKey);
     preparedImage = new Image();
     preparedImage.src = mediaURL(result.photo.id, "main");
-    try { await preparedImage.decode(); } catch { preparedImage = undefined; }
+    // A committed save must not wait indefinitely for its preview download.
+    let previewTimeout: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([preparedImage.decode(), new Promise<never>((_, reject) => {
+        previewTimeout = setTimeout(() => reject(new Error("preview timeout")), 3000);
+      })]);
+    } catch { preparedImage = undefined; }
+    finally { clearTimeout(previewTimeout); }
     emit("rotated", result);
     await nextTick();
     operation = undefined;
