@@ -228,8 +228,8 @@ onUnmounted(() => { observer?.disconnect(); clearPointers(); });
         <button type="button" class="photo-viewer-fit" :disabled="!ready" @click="reset">适应窗口</button>
       </div>
       <div class="photo-viewer-rotation">
-        <button type="button" class="icon-button" aria-label="向左旋转90°" title="向左旋转90°" :disabled="!ready || !photoId || saving || Boolean(operation) || rotateDisabled" @click="rotate(-1)"><Icon name="rotateLeft" /></button>
-        <button type="button" class="icon-button" aria-label="向右旋转90°" title="向右旋转90°" :disabled="!ready || !photoId || saving || Boolean(operation) || rotateDisabled" @click="rotate(1)"><Icon name="rotateRight" /></button>
+        <button type="button" class="icon-button" aria-label="向左旋转90°" title="向左旋转90°" :disabled="!ready || !photoId || saving || Boolean(operation) || rotateDisabled" @click="rotate(-1)"><Icon name="rotateLeft" :size="22" /></button>
+        <button type="button" class="icon-button" aria-label="向右旋转90°" title="向右旋转90°" :disabled="!ready || !photoId || saving || Boolean(operation) || rotateDisabled" @click="rotate(1)"><Icon name="rotateRight" :size="22" /></button>
         <button type="button" class="photo-viewer-fit" :disabled="!turns || saving || Boolean(operation)" @click="restoreRotation">还原方向</button>
         <button type="button" class="photo-viewer-save" :disabled="!turns || saving || rotateDisabled" @click="saveRotation">{{ saving ? '正在保存…' : '保存旋转' }}</button>
       </div>
