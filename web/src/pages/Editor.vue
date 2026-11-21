@@ -495,6 +495,17 @@ onUnmounted(() => {
               :aria-invalid="errorField === 'name'"
           /></label>
           <div class="field-hint">有照片时可留空，保存后自动命名。</div>
+          <div class="field-label">尺寸</div>
+          <p v-if="editing" class="field-hint">
+            补测或更正录入信息时在这里修改；使用后记录剩余布片，请从详情页选择“更新余料”。
+          </p>
+          <p v-if="f.status === 'used'" class="field-hint">
+            已用完，没有剩余布片。以前的尺寸保留在修改历史中。
+          </p>
+          <PieceFields v-else v-model="f.pieces" />
+          <label
+            >当前状态<ChoiceField :model-value="f.status" label="当前状态" :options="Object.entries(statuses).map(([value, label]) => ({ value, label }))" @update:model-value="changeStatus" /></label
+          >
           <div class="field-label">材质</div>
           <div class="material-options">
             <div
@@ -539,31 +550,6 @@ onUnmounted(() => {
         <section class="form-panel">
           <details
             :open="
-              !editing || errorField === 'pieces' || errorField === 'status'
-            "
-          >
-            <summary>
-              <span class="section-number">02</span>
-              <h2>{{ editing ? "修正尺寸或状态" : "尺寸与状态" }}</h2>
-              <Icon name="chevron" :size="17" />
-            </summary>
-            <div class="details-fields">
-              <p v-if="editing" class="field-hint">
-                补测或更正录入信息时在这里修改；使用后记录剩余布片，请从详情页选择“更新余料”。
-              </p>
-              <label
-                >当前状态<ChoiceField :model-value="f.status" label="当前状态" :options="Object.entries(statuses).map(([value, label]) => ({ value, label }))" @update:model-value="changeStatus" /></label
-              >
-              <p v-if="f.status === 'used'" class="field-hint">
-                已用完，没有剩余布片。以前的尺寸保留在修改历史中。
-              </p>
-              <PieceFields v-else v-model="f.pieces" />
-            </div>
-          </details>
-        </section>
-        <section class="form-panel">
-          <details
-            :open="
               Boolean(
                 f.color ||
                   tags ||
@@ -575,7 +561,7 @@ onUnmounted(() => {
             "
           >
             <summary>
-              <span class="section-number">03</span>
+              <span class="section-number">02</span>
               <h2>更多细节</h2>
               <span class="optional">选填</span
               ><Icon name="chevron" :size="17" />
