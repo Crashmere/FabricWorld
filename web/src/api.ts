@@ -1,5 +1,7 @@
 import { ref } from "vue";
-import type { Photo } from "./types";
+import type { Fabric, Photo } from "./types";
+import type { Work } from "./works";
+export type RotationResult = { photo: Photo; fabric?: Fabric; work?: Work };
 export const base = import.meta.env.BASE_URL;
 export const notice = ref("");
 let noticeTimer: ReturnType<typeof setTimeout>;

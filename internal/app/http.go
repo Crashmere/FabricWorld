@@ -176,6 +176,7 @@ func (s *Store) Handler(assets fs.FS) http.Handler {
 		jsonResponse(w, 200, m)
 		return nil
 	})
+	handle("POST /api/media/{id}/rotate", s.rotatePhotoHTTP)
 	handle("GET /media/{id}/{variant}", func(w http.ResponseWriter, r *http.Request) error {
 		p, e := s.MediaPath(r.Context(), r.PathValue("id"), r.PathValue("variant"))
 		if e != nil {

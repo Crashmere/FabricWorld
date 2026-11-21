@@ -14,6 +14,7 @@ The external prefix is `/fabricworld/`; Nginx strips the prefix. The paths below
 | POST /api/fabrics/{id}/restore | Body contains `revision`; restores a record deleted within the last 30 days |
 | GET /api/fabrics/{id}/changes | Returns the latest 100 changes, including before/after business snapshots |
 | POST /api/uploads | `multipart/form-data`, with `file` as the first part; maximum 25 MiB per image; success returns 200 and `Media` |
+| POST /api/media/{id}/rotate | Creates a rotated JPEG/WebP pair; `{turns,revision,draft}`; returns `{photo,fabric?,work?}` |
 | GET /api/operations/{key} | Returns the original write result; 404 means it has not been found and must not be treated directly as failure |
 | GET /api/suggestions | `materials` merges the independent catalog with materials from non-deleted fabrics; `tags`/`location`/`color` return at most 200 entries each |
 | GET /api/materials | Returns the saved material array; each item has `name`/`count`/`trashCount`/`version`, including recycle-bin usage |
@@ -44,7 +45,17 @@ The two tables above cover the current business, health, and media endpoints. Ke
 
 Writes use `Idempotency-Key` and the existing operations lookup. `revision_conflict`, `key_reused`, `deleted`, `expired`, and `validation` retain the existing error format. Finished-work photos use the existing uploads endpoint. Media can be bound to only one finished work or fabric; while the owning record is deleted, the media endpoint cannot read it, and it becomes available again after restoration. See [WORKS.md](WORKS.md) for field limits, pages, and migration details.
 
-The same idempotency key for a form write must retain the exact HTTP method, internal path, and body bytes. Upload replay is identified by the original file bytes and does not require the same multipart boundary. Maintenance cleanup retains ordinary operation results for approximately seven days; Ledger source records are retained indefinitely. `GET /api/operations/{key}` returns the original submission result, which may be a `Fabric`, `Work`, `Media`, or material-operation result; it does not represent the resource's latest state. Uploads accept JPEG, PNG, WebP, HEIC, and HEIF. A staged photo must be bound within 24 hours. Media accepts only `main` and `thumb`; it returns 404 when the photo has been removed, its owning record is deleted, or staging has expired.
+The same idempotency key for a form write must retain the exact HTTP method, internal path, and body bytes. Upload replay is identified by the original file bytes and does not require the same multipart boundary. Maintenance cleanup retains ordinary operation results for approximately seven days; Ledger source records are retained indefinitely. `GET /api/operations/{key}` returns the original submission result, which may be a `Fabric`, `Work`, `Media`, rotation result, or material-operation result; it does not represent the resource's latest state. Uploads accept JPEG, PNG, WebP, HEIC, and HEIF. A staged photo must be bound within 24 hours. Media accepts only `main` and `thumb`; it returns 404 when the photo has been removed, its owning record is deleted, or staging has expired.
+
+## Photo Rotation
+
+`turns` is 1, 2, or 3 clockwise quarter turns. The source is the existing standard JPEG, not the original camera upload. Rotation uses the same processing slot, 40-second deadline, capacity checks, and maintenance lock as uploads. It creates a new random media ID and synchronizes both files before committing; existing files are never overwritten.
+
+With `draft=false` (the default), an owned photo requires its fabric or finished work's current `revision`. The transaction replaces only that photo's ID at its existing position, assigns the new media to the same owner, marks the old media removed, increments the owner's revision, and records `rotate_photo` in history. The response includes `photo` and the updated `fabric` or `work`. All other record fields remain unchanged. Ownership and revision are rechecked after image processing. The removed source follows the existing 30-day retention rule.
+
+With `draft=true`, or when the source is unbound, the response contains only `photo`: a new unbound copy, valid for 24 hours. The source and owning record remain unchanged. Create/edit pages replace the draft's photo reference and bind the copy through their normal form save. Draft copies do not require an owner revision because they do not update the owner. Removed, deleted-owner, and expired sources remain unavailable in either mode.
+
+Rotation requires `Idempotency-Key`. Retry the exact method, path, and body with that key; a successful replay returns the original result even after the source is removed. Unknown results can be queried through `/api/operations/{key}`. Changing the body with the same key returns `key_reused`; stale owner versions return `revision_conflict`.
 
 ## Fabric Fields and Integrations
 

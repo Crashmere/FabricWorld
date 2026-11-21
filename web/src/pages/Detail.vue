@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { request, write, key, toast, mediaURL } from "../api";
+import { request, write, key, toast, mediaURL, type RotationResult } from "../api";
 import {
   dateText,
   dimensions,
@@ -35,6 +35,13 @@ const route = useRoute(),
 function openPhoto(event: MouseEvent) {
   (event.currentTarget as HTMLElement).focus({ preventScroll: true });
   lightbox.value = true;
+}
+async function rotated(result: RotationResult) {
+  if (result.fabric) fabric.value = result.fabric;
+  if (showHistory.value) {
+    try { history.value = await request("fabrics/" + route.params.id + "/changes"); }
+    catch (e) { error.value = (e as Error).message; }
+  }
 }
 async function load() {
   loading.value = true;
@@ -276,6 +283,8 @@ onMounted(() => { void load(); void loadWorks(); });
                       ? "更新余料"
                       : h.action === "remove_material"
                         ? "移除材质"
+                        : h.action === "rotate_photo"
+                          ? "旋转照片"
                         : "编辑记录"
             }}</strong
             ><time>{{ dateText(h.at) }}</time>
@@ -317,7 +326,8 @@ onMounted(() => { void load(); void loadWorks(); });
           </div>
         </div></Modal
       ><PhotoViewer v-if="lightbox" :title="fabric.name" :src="mediaURL(fabric.photos[selected]!.id, 'main')"
-        :alt="fabric.name" @close="lightbox = false">
+        :alt="fabric.name" :photo-id="fabric.photos[selected]!.id" :revision="fabric.revision"
+        :rotate-disabled="busy || loading" @rotated="rotated" @close="lightbox = false">
         <template v-if="fabric.photos.length > 1" #navigation>
           <button
             class="icon-button"

@@ -195,11 +195,33 @@ func (s *Store) Upload(ctx context.Context, key string, r io.Reader) (Media, err
 	if _, e = runImage(ictx, "vips", "thumbnail", main, thumb+"[Q=80,strip]", "640", "--height=640", "--size=down"); e != nil {
 		return m, e
 	}
-	w, e = headerInt(ictx, main, "width")
+	m, e = s.publishMedia(ictx, main, thumb)
 	if e != nil {
 		return m, e
 	}
-	height, e = headerInt(ictx, main, "height")
+	tx, e := s.DB.BeginTx(ctx, nil)
+	if e != nil {
+		return m, e
+	}
+	defer tx.Rollback()
+	b, _ := json.Marshal(m)
+	if _, e = tx.ExecContext(ctx, "INSERT INTO media(id,body,created_at) VALUES(?,?,?)", m.ID, string(b), m.CreatedAt); e != nil {
+		return m, e
+	}
+	if _, e = tx.ExecContext(ctx, "INSERT INTO operations VALUES(?,?,?,?)", key, fp, string(b), now()); e != nil {
+		return m, e
+	}
+	return m, tx.Commit()
+}
+
+// Publish new immutable files so cached URLs and hard-linked backups stay valid.
+func (s *Store) publishMedia(ctx context.Context, main, thumb string) (Media, error) {
+	var m Media
+	w, e := headerInt(ctx, main, "width")
+	if e != nil {
+		return m, e
+	}
+	height, e := headerInt(ctx, main, "height")
 	if e != nil {
 		return m, e
 	}
@@ -229,19 +251,7 @@ func (s *Store) Upload(ctx context.Context, key string, r io.Reader) (Media, err
 	if e != nil {
 		return m, e
 	}
-	tx, e := s.DB.BeginTx(ctx, nil)
-	if e != nil {
-		return m, e
-	}
-	defer tx.Rollback()
-	b, _ := json.Marshal(m)
-	if _, e = tx.ExecContext(ctx, "INSERT INTO media(id,body,created_at) VALUES(?,?,?)", m.ID, string(b), m.CreatedAt); e != nil {
-		return m, e
-	}
-	if _, e = tx.ExecContext(ctx, "INSERT INTO operations VALUES(?,?,?,?)", key, fp, string(b), now()); e != nil {
-		return m, e
-	}
-	return m, tx.Commit()
+	return m, nil
 }
 func (s *Store) MediaPath(ctx context.Context, id, variant string) (string, error) {
 	if !idPattern.MatchString(id) || (variant != "main" && variant != "thumb") {

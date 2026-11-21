@@ -145,7 +145,7 @@ onUnmounted(() => window.removeEventListener("beforeunload", beforeUnload));
     <section v-if="conflict" class="info-banner work-recovery"><p>当前输入已保留。最新记录：{{ latest?.name }} · {{ latest?.completedDate || '日期未填' }} · {{ latest?.pattern || '纸样未填' }}</p><p v-if="latest?.notes" class="notes">{{ latest.notes }}</p><RouterLink :to="'/works/' + route.params.id" target="_blank">打开最新记录核对</RouterLink><button type="button" @click="reconcile">已核对，保留当前输入</button></section>
     <p v-if="loading" class="loading-text">正在加载成品…</p>
     <form v-else-if="initialized" id="work-form" class="editor-layout" @submit.prevent="save">
-      <fieldset class="photo-column" :disabled="saving || uncertain"><WorkPhotos v-model="w.photos" v-model:pending="pending" /></fieldset>
+      <fieldset class="photo-column" :disabled="saving || uncertain"><WorkPhotos v-model="w.photos" v-model:pending="pending" :disabled="saving || uncertain" /></fieldset>
       <fieldset class="fields-column" :disabled="saving || uncertain">
         <section class="form-panel"><div class="section-title"><h2><span class="section-number">01</span>这件作品</h2></div>
           <label>成品名称<input v-model="w.name" required maxlength="200" placeholder="例如：秋天的亚麻衬衫" :aria-invalid="field === 'name'" /></label>

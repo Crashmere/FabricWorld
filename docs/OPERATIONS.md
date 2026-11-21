@@ -108,6 +108,8 @@ Common failures: 415 unsupported file type; 422 HEIC decoding failure or limit e
 
 Image processing supports the verified libvips 8.15 and 8.18. Color conversion uses the shared `--export-profile=srgb` option. Version 8.15 does not support the newer `--output-profile` name. On conversion failure, the journal records the subprocess error and the page returns a readable message.
 
+Photo rotation uses the same installed libvips CPU pipeline and introduces no runtime or schema migration. Saves create new immutable JPEG/WebP files, preserving hard-linked snapshots and existing file bytes. Replaced photos follow the existing 30-day removed-media policy; unsaved rotated copies expire after 24 hours. Rotation failures appear as `image rotation` in the journal. See [Photo Rotation](API.md#photo-rotation) for revision and retry behavior; production acceptance remains read-only.
+
 ## Ledger Integration Operating Contract
 
 Ledger calls `/api/integrations/ledger` over local HTTP, targeting `127.0.0.1:18082` by default. Ledger owns the `LEDGER_FABRICWORLD_URL` configuration. FabricWorld adds no configuration, shared database, or service dependency. Release the FabricWorld endpoint before the Ledger dialog. Nginx, runtime identities, and permissions remain unchanged.

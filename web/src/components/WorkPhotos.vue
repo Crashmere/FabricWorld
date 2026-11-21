@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onUnmounted, ref, watch } from "vue";
-import { key, mediaURL, upload } from "../api";
+import { key, mediaURL, upload, type RotationResult } from "../api";
 import type { Photo } from "../types";
 import Icon from "./Icon.vue";
 import PhotoViewer from "./PhotoViewer.vue";
 const photos = defineModel<Photo[]>({ required: true });
 const pendingCount = defineModel<number>("pending", { required: true });
+defineProps<{ disabled?: boolean }>();
 type Pending = { id: string; file: File; url: string; progress: number; error: string; active: boolean; key: string };
 const pending = ref<Pending[]>([]), camera = ref<HTMLInputElement>(), album = ref<HTMLInputElement>();
 const error = ref(""), preview = ref<{ id: string; src: string; alt: string }>();
@@ -61,6 +62,12 @@ function show(id: string, src: string, alt: string, e: MouseEvent) {
   (e.currentTarget as HTMLElement).focus({ preventScroll: true });
   preview.value = { id, src, alt };
 }
+function rotated(result: RotationResult) {
+  if (!preview.value) return;
+  const oldId = preview.value.id;
+  photos.value = photos.value.map(p => p.id === oldId ? result.photo : p);
+  preview.value = { ...preview.value, id: result.photo.id, src: mediaURL(result.photo.id, "main") };
+}
 onUnmounted(() => { disposed = true; pending.value.forEach(p => URL.revokeObjectURL(p.url)); });
 </script>
 <template>
@@ -90,6 +97,8 @@ onUnmounted(() => { disposed = true; pending.value.forEach(p => URL.revokeObject
     <input ref="album" class="sr-only" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif" multiple aria-label="选择照片文件" @change="selected" />
     <p class="field-hint">最多 10 张，每张不超过 25 MB。第一张作为封面，也可以稍后补照片。</p>
     <p v-if="error" class="error-banner" role="alert">{{ error }}</p>
-    <PhotoViewer v-if="preview" :src="preview.src" :alt="preview.alt" @close="preview = undefined" />
+    <PhotoViewer v-if="preview" :src="preview.src" :alt="preview.alt" draft
+      :photo-id="photos.find(p => p.id === preview?.id)?.id" :rotate-disabled="disabled"
+      @rotated="rotated" @close="preview = undefined" />
   </section>
 </template>

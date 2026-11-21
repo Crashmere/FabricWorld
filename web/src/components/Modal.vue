@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from "vue";
 import Icon from "./Icon.vue";
-defineProps<{ title: string; photo?: boolean }>();
+const props = defineProps<{ title: string; photo?: boolean; busy?: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 const box = ref<HTMLElement>();
 let previous: Element | null;
 let scroll = 0;
 function keys(e: KeyboardEvent) {
-  if (e.key === "Escape") emit("close");
+  if (e.key === "Escape" && !props.busy) emit("close");
 }
 onMounted(() => {
   previous = document.activeElement;
@@ -29,7 +29,7 @@ onUnmounted(() => {
 </script>
 <template>
   <Teleport to="body"
-    ><div class="modal-scrim" :class="{ 'photo-scrim': photo }" @click.self="emit('close')">
+    ><div class="modal-scrim" :class="{ 'photo-scrim': photo }" @click.self="!busy && emit('close')">
       <section
         ref="box"
         class="modal"
@@ -40,7 +40,7 @@ onUnmounted(() => {
       >
         <header>
           <h2>{{ title }}</h2>
-          <button class="icon-button" aria-label="关闭" @click="emit('close')">
+          <button class="icon-button" aria-label="关闭" :disabled="busy" @click="emit('close')">
             <Icon name="close" />
           </button>
         </header>

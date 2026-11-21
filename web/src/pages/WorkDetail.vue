@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { APIError, key, mediaURL, request, toast, write } from "../api";
+import { APIError, key, mediaURL, request, toast, write, type RotationResult } from "../api";
 import { dateText } from "../types";
 import type { Work, WorkChange } from "../works";
 import Icon from "../components/Icon.vue";
@@ -13,6 +13,13 @@ const lightbox = ref(false), confirmDelete = ref(false), showHistory = ref(false
 type Operation = { key: string; action: "delete" | "restore"; revision: number; at: number };
 const pending = ref<Operation>();
 const operationStorage = "fabricworld:work-action:" + route.params.id;
+async function rotated(result: RotationResult) {
+  if (result.work) w.value = result.work;
+  if (showHistory.value) {
+    try { history.value = await request<WorkChange[]>("works/" + route.params.id + "/changes"); }
+    catch (e) { error.value = (e as Error).message; }
+  }
+}
 function remember(op?: Operation) {
   pending.value = op;
   try { if (op) sessionStorage.setItem(operationStorage, JSON.stringify(op)); else sessionStorage.removeItem(operationStorage); } catch {}
@@ -90,9 +97,11 @@ onMounted(async () => {
           <p class="record-time">录入于 {{ dateText(w.createdAt) }} · 最近修改 {{ dateText(w.updatedAt) }}</p>
         </section>
       </div>
-      <section v-if="showHistory" class="history-panel"><h2>修改历史</h2><div v-for="h in history" :key="h.revision" class="history-item"><span class="history-dot"></span><div><strong>{{ h.revision === 1 ? '首次记录' : h.action === 'delete' ? '移入回收站' : h.action === 'restore' ? '恢复成品' : '编辑成品' }}</strong><time>{{ dateText(h.at) }}</time><details><summary>查看当时的信息</summary><p>{{ h.after.name }} · {{ h.after.category || '未分类' }} · {{ h.after.completedDate || '日期未填' }}</p><p>纸样：{{ h.after.pattern || '未填' }} · 尺码：{{ h.after.size || '未填' }} · 为谁制作：{{ h.after.recipient || '未填' }}</p><p>标签：{{ h.after.tags.join('、') || '未填' }} · 照片 {{ h.after.photoIds.length }} 张</p><p v-for="f in h.after.fabrics" :key="f.fabricId">{{ f.name }}：{{ f.note || '无用布说明' }}</p><p class="notes">{{ h.after.notes }}</p></details></div></div></section>
+      <section v-if="showHistory" class="history-panel"><h2>修改历史</h2><div v-for="h in history" :key="h.revision" class="history-item"><span class="history-dot"></span><div><strong>{{ h.revision === 1 ? '首次记录' : h.action === 'delete' ? '移入回收站' : h.action === 'restore' ? '恢复成品' : h.action === 'rotate_photo' ? '旋转照片' : '编辑成品' }}</strong><time>{{ dateText(h.at) }}</time><details><summary>查看当时的信息</summary><p>{{ h.after.name }} · {{ h.after.category || '未分类' }} · {{ h.after.completedDate || '日期未填' }}</p><p>纸样：{{ h.after.pattern || '未填' }} · 尺码：{{ h.after.size || '未填' }} · 为谁制作：{{ h.after.recipient || '未填' }}</p><p>标签：{{ h.after.tags.join('、') || '未填' }} · 照片 {{ h.after.photoIds.length }} 张</p><p v-for="f in h.after.fabrics" :key="f.fabricId">{{ f.name }}：{{ f.note || '无用布说明' }}</p><p class="notes">{{ h.after.notes }}</p></details></div></div></section>
       <Modal v-if="confirmDelete" title="将成品移入回收站？" @close="!busy && (confirmDelete = false)"><div class="filter-form"><p>“{{ w.name }}”及其照片保留 30 天，可以恢复。关联布料和库存不受影响。</p><div class="modal-actions"><button class="button secondary" :disabled="busy" @click="confirmDelete = false">保留成品</button><button class="button danger" :disabled="busy" @click="mutate('delete')">{{ busy ? '处理中…' : '移入回收站' }}</button></div></div></Modal>
-      <PhotoViewer v-if="lightbox && w.photos[selected]" :src="mediaURL(w.photos[selected]!.id, 'main')" :alt="w.name" :title="w.name" @close="lightbox = false"><template v-if="w.photos.length > 1" #navigation><button class="icon-button" :disabled="selected === 0" aria-label="上一张" @click="selected--"><Icon name="back" /></button><span>{{ selected + 1 }} / {{ w.photos.length }}</span><button class="icon-button" :disabled="selected === w.photos.length - 1" aria-label="下一张" @click="selected++"><Icon name="chevron" /></button></template></PhotoViewer>
+      <PhotoViewer v-if="lightbox && w.photos[selected]" :src="mediaURL(w.photos[selected]!.id, 'main')" :alt="w.name" :title="w.name"
+        :photo-id="w.photos[selected]!.id" :revision="w.revision" :rotate-disabled="busy || loading || Boolean(pending)"
+        @rotated="rotated" @close="lightbox = false"><template v-if="w.photos.length > 1" #navigation><button class="icon-button" :disabled="selected === 0" aria-label="上一张" @click="selected--"><Icon name="back" /></button><span>{{ selected + 1 }} / {{ w.photos.length }}</span><button class="icon-button" :disabled="selected === w.photos.length - 1" aria-label="下一张" @click="selected++"><Icon name="chevron" /></button></template></PhotoViewer>
     </template>
   </div>
 </template>

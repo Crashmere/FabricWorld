@@ -21,6 +21,8 @@ const paths: Record<string, string> = {
   more: "M5 12h.01M12 12h.01M19 12h.01",
   box: "m3 7 9-4 9 4-9 4-9-4Zm0 0v10l9 4 9-4V7M12 11v10",
   restore: "M3 10a9 9 0 1 1 2 8M3 4v6h6M12 7v5l3 2",
+  rotateLeft: "M3 9a9 9 0 1 1 2 9M3 3v6h6M9 13h6v5H9z",
+  rotateRight: "M21 9a9 9 0 1 0-2 9M21 3v6h-6M9 13h6v5H9z",
   copy: "M9 9h12v12H9zM5 15H3V3h12v2",
   arrow: "M12 19V5m-6 6 6-6 6 6",
   alert: "m12 3 10 18H2L12 3Zm0 6v5m0 3h.01",

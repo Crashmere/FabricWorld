@@ -113,6 +113,11 @@
       "description": "multipart/form-data，第一个 part 为 file；单张最大 25 MiB，成功返回 200 和 Media"
     },
     {
+      "method": "POST",
+      "path": "/api/media/{id}/rotate",
+      "description": "按 turns 旋转并生成新照片；详情保存需 revision，draft=true 暂存副本，支持幂等重试"
+    },
+    {
       "method": "GET",
       "path": "/api/operations/{key}",
       "description": "原写入结果；404 表示尚未查到，不能直接等同失败"

@@ -2227,7 +2227,7 @@ details[open] > summary > svg {
   padding: 8px 12px;
   border-top: 1px solid #ffffff1f;
 }
-.photo-viewer-controls, .photo-viewer-navigation {
+.photo-viewer-controls, .photo-viewer-navigation, .photo-viewer-rotation {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2235,7 +2235,11 @@ details[open] > summary > svg {
 }
 .photo-viewer-scale { min-width: 56px; text-align: center; font-size: 14px; font-variant-numeric: tabular-nums; }
 .photo-viewer-fit { min-height: 44px; padding: 0 12px; border-radius: 8px; font-size: 14px; }
-.photo-viewer-navigation { gap: 12px; font-size: 13px; }
+.photo-viewer-navigation { gap: 12px; font-size: 13px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.photo-viewer-rotation { gap: 6px; }
+.photo-viewer-save { min-height: 44px; padding: 0 14px; border-radius: 8px; background: #afc3a2; color: #15201b; font-weight: 600; }
+.modal-photo .photo-viewer-save:hover { background: #c4d6b8; }
+.photo-viewer-error { width: 100%; color: #f0b4a6; text-align: center; font-size: 13px; }
 .photo-viewer-hint { width: 100%; text-align: center; font-size: 12px; color: #b2c1b7; line-height: 1.5; }
 @media (max-width: 760px) {
   .modal-scrim.photo-scrim { padding: 0; }

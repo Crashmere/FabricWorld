@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter, onBeforeRouteLeave } from "vue-router";
-import { APIError, key, mediaURL, request, toast, upload, write } from "../api";
+import { APIError, key, mediaURL, request, toast, upload, write, type RotationResult } from "../api";
 import {
   materials,
   newFabric,
@@ -48,6 +48,13 @@ const photoPreview = ref<{ id: string; src: string; alt: string } | null>(null);
 function previewPhoto(id: string, src: string, alt: string, event?: MouseEvent) {
   (event?.currentTarget as HTMLElement | null)?.focus({ preventScroll: true });
   photoPreview.value = { id, src, alt };
+}
+function rotated(result: RotationResult) {
+  if (!photoPreview.value) return;
+  const oldId = photoPreview.value.id;
+  f.value.photos = f.value.photos.map(p => p.id === oldId ? result.photo : p);
+  f.value.photoIds = f.value.photoIds.map(id => id === oldId ? result.photo.id : id);
+  photoPreview.value = { ...photoPreview.value, id: result.photo.id, src: mediaURL(result.photo.id, "main") };
 }
 const uploading = computed(() => pending.value.some((p) => p.active));
 function syncMaterialPercentages(previousCount = f.value.materials.length) {
@@ -630,6 +637,8 @@ onUnmounted(() => {
         }}
       </button>
     </div>
-    <PhotoViewer v-if="photoPreview" :src="photoPreview.src" :alt="photoPreview.alt" @close="photoPreview = null" />
+    <PhotoViewer v-if="photoPreview" :src="photoPreview.src" :alt="photoPreview.alt" draft
+      :photo-id="f.photos.find(p => p.id === photoPreview?.id)?.id" :rotate-disabled="saving || uncertain"
+      @rotated="rotated" @close="photoPreview = null" />
   </div>
 </template>
